@@ -31,27 +31,53 @@ let states = {
 		parent,
 		`&([a-zA-Z0-9]+|#[xX][0-9a-fA-F]+|#[0-9]+);?(?<charref_>)`,
 		`<![dD][oO][cC][tT][yY][pP][eE][^]*?(>|$)(?<doctype_>)`,
-		`</?[a-z][^\t\n\f />]*/?(>(?<tag_>))?(?<tag_attributes>)`,
-		`(<!--(-?>|[^]*?(--!?>|$))|<[!?/][^>]*(>|$))(?<comment_>)`,
 		`<script>(?<tag_script>)`,
+		`<style>(?<tag_rawtext>)`,
+		`</?[a-z][^\t\n\f />]*/?(>(?<tag_>))?(?<tag_attributes>)`,
+		`<!---?>(?<error_>)`,
+		`<!--(?<comment_comment>)`,
+		`<[!?/][^>]*(>|$)(?<error_>)`,
+	),
+	comment: new State(
+		parent,
+		`[^]*?(?=--!?>|$)(?<commenttext_commentend>)`,
+	),
+	commentend: new State(
+		parent,
+		`--!?>(?<comment_data>)`,
 	),
 	script: new State(
 		parent,
-		`(?=</script)(?<text_data>)`,
-		//`<![dD][oO][cC][tT][yY][pP][eE][^]*?(>|$)(?<doctype_>)`,
-		//`(<!--(-?>|[^]*?(--!?>|$))|<![^>]*(>|$))(?<comment_>)`,
+		`[^]*?(?=</script|$)(?<script_data>)`,
 	),
 	attributes: new State(
 		parent,
-		`>(?<tag_data>)`
+		`[^\t\n\f />=]+(?<key_aftername>)`,
+		`>(?<tag_data>)`,
 	),
+	aftername: new State(
+		parent,
+		`\s*=\s*(?<_value>)`,
+		`(?<_attributes>)`,
+	),
+	value: new State(
+		parent,
+		`[^\t\n\f >]*(?<value_attributes>)`,
+		`(?<_attributes>)`,
+	),
+	rawtext: new State(
+		parent,
+		`[^]*?(?=</style|$)(?<rawtext_data>)`,
+	)
 }
 $in.oninput = e=>{
 	go($in.value)
 }
 
-function pre(text) {
-	let p = document.createElement('pre')
+function pre(text, cls) {
+	let p = document.createElement('span')
+	if (cls)
+		p.className = cls
 	p.append(text)
 	return p
 }
@@ -59,27 +85,27 @@ function go(text) {
 	$out.textContent = ""
 	let current = 'data'
 	let prev = -1
+	let iloop = 0
 	parent.text = text
 	parent.lastIndex = 0
 	while (1) {
-		if (parent.lastIndex==prev)	
-			throw new Error('infinite loop '+parent.lastIndex)
+		if (parent.lastIndex==prev) {
+			iloop++
+			if (iloop>5)
+				throw new Error('infinite loop '+parent.lastIndex)
+		} else
+			iloop=0
 		prev = parent.lastIndex
 		let res = states[current].scan()
 		if (!res)
 			break
 		let last = res[0]
-		if (last) {
-			$out.append("text: ", pre(last))
-			$out.append("\n")
-		}
-		$out.append(res[1][0]+": ", pre(res[2]))
-		$out.append("\n")
+		if (last)
+			$out.append(pre(last))
+		$out.append(pre(res[2], res[1][0]))
 		current = res[1][1] || current
 	}
 	let last = parent.text.substring(parent.lastIndex)
-	if (last) {
-		$out.append("text: ", pre(last))
-		$out.append("\n")
-	}
+	if (last)
+		$out.append(pre(last))
 }

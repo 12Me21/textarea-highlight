@@ -5,23 +5,47 @@
 		white-space: pre;
 	}
 	pre {
-		background-color: #CCC;
-		display: inline-block;
-		padding: 1px 3px;
+		background-color: black;
+		font: 1em monospace, monospace;
+		color: white;
+		padding: 4px 8px;
 		margin: 0;
 	}
 	.comment {
-		color: green;
+		color: #0C0;
+	}
+	.commenttext {
+		color: lime;
 	}
 	.tag {
 		font-weight: bold;
-		color: blue;
+		color: cyan;
 	}
 	.doctype {
 		font-weight: bold;
-		color: gray;
+		color: silver;
+	}
+	.charref {
+		font-style: italic;
+	}
+	.key {
+		color: orange;
+	}
+	.value {
+		color: fuchsia;
+	}
+	.error {
+		background-color: maroon;
+	}
+	.script {
+		font-style: italic;
+		background-color: gray;
+	}
+	.rawtext {
+		font-style: italic;
+		background-color: gray;
 	}
 </style>
 <script defer src=hl2.js></script>
 <textarea id=$in></textarea>
-<div id=$out></div>
+<pre id=$out></pre>
