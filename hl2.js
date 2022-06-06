@@ -26,6 +26,12 @@ class State extends RegExp {
 
 let parent = {lastIndex: 0, text: "<!doctype html> hii!~ <!--  hecko --> ... &lt;"}
 
+function make_parser(states) {
+	for (let [name, patterns] of states) {
+		
+	}
+}
+
 let states = {
 	data: new State(
 		parent,
@@ -70,9 +76,9 @@ let states = {
 		`[^]*?(?=</style|$)(?<rawtext_data>)`,
 	)
 }
-$in.oninput = e=>{
+/*$in.oninput = e=>{
 	go($in.value)
-}
+}*/
 
 function pre(text, cls) {
 	let p = document.createElement('span')
@@ -81,7 +87,7 @@ function pre(text, cls) {
 	p.append(text)
 	return p
 }
-function go(text) {
+function go(text, $out) {
 	$out.textContent = ""
 	let current = 'data'
 	let prev = -1
