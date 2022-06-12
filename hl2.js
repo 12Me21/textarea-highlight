@@ -36,23 +36,20 @@ class Parser {
 		this.states = states
 	}
 	parse(text, oldtext, oldtokens) {
+		nw++
 		let iloop = 0
 		let current, s_name
-		nw++
 		let ti = first_difference(oldtext, text, oldtokens)
-		let suffix = suffix_length(oldtext, text)
+		let suff_start = text.length - suffix_length(oldtext, text)
 		let shift = text.length - oldtext.length
-		let suff_start = text.length-suffix
-		//console.log("matching token:", ti)
 		
 		let token1
-		let tokens
 		if (ti<0)
 			token1 = {start:0, end:0, type:undefined, state:'data'}
 		else
 			token1 = oldtokens[ti]
 		ti++
-		tokens = oldtokens.slice(0, ti)
+		let tokens = oldtokens.slice(0, ti)
 		let lastIndex = token1.end
 		
 		let to_state = (name)=>{
@@ -71,8 +68,13 @@ class Parser {
 				for (let i=0; i<oldtokens.length; i++) {
 					let x = oldtokens[i]
 					if (x.start+shift == start && x.end+shift == end && x.type == type && x.state == s_name) {
-						t2 = i
-						return
+						for (; i<oldtokens.length; i++) {
+							let x = oldtokens[i]
+							x.start+=shift
+							x.end+=shift
+							tokens.push(x)
+						}
+						return true
 					}
 				}
 			}
@@ -83,7 +85,8 @@ class Parser {
 		
 		let match
 		while (match = current.regex.exec(text)) {
-			output(lastIndex, match.index)
+			if (output(lastIndex, match.index))
+				return tokens
 			// infinite loop protection
 			if (lastIndex == current.regex.lastIndex) {
 				if (iloop++ > 5)
@@ -97,19 +100,10 @@ class Parser {
 				g = g(match[0])
 			if (g.state)
 				s_name = g.state
-			output(match.index, lastIndex, g.token)
+			if (output(match.index, lastIndex, g.token))
+				return tokens
 			if (g.state)
 				to_state(g.state)
-			if (t2) {
-				//console.log('got sync!', oldtokens.length-t2)
-				for (let i=t2; i<oldtokens.length; i++) {
-					let x = oldtokens[i]
-					x.start+=shift
-					x.end+=shift
-					tokens.push(x)
-				}
-				return tokens
-			}
 		}
 		output(lastIndex, text.length)
 		return tokens
