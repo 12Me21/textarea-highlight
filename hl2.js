@@ -20,7 +20,7 @@ function first_difference(str1, str2, tokens) {
 	return ti-1
 }
 
-function suffix_length(str1, str2) {
+function suffix_length(str1, str2, tokens) {
 	let i
 	for (i=0; i<str1.length; i++) {
 		if (str1[str1.length-1-i]!==str2[str2.length-1-i])
@@ -40,6 +40,7 @@ class Parser {
 		let ti = first_difference(oldtext, text, oldtokens)
 		let suffix = suffix_length(oldtext, text)
 		let shift = text.length - oldtext.length
+		let suff_start = text.length-suffix
 		console.log("matching token:", ti)
 		
 		let token1
@@ -59,9 +60,20 @@ class Parser {
 		}
 		to_state(token1.state)
 		
+		let t2
+		
 		function output(start, end, type) {
 			if (start==end)
 				return
+			if (start >= suff_start) {
+				for (let i=0; i<oldtokens.length; i++) {
+					let x = oldtokens[i]
+					if (x.start+shift == start && x.end+shift == end && x.type == type && x.state == s_name) {
+						t2 = i
+						return
+					}
+				}
+			}
 			tokens[ti++] = {start, end, type, state:s_name}
 		}
 		
@@ -86,6 +98,11 @@ class Parser {
 			output(match.index, lastIndex, g.token)
 			if (g.state)
 				to_state(g.state)
+			if (t2) {
+				console.log('got sync!', t2)
+				tokens.push(...oldtokens.slice(t2).map(x=>0||{start:x.start+shift,end:x.end+shift,type:x.type,state:x.state}))
+				return tokens
+			}
 		}
 		output(lastIndex, text.length)
 		return tokens
