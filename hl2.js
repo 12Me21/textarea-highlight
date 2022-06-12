@@ -40,6 +40,7 @@ class Parser {
 			if (text[suff_start] !== oldtext[suff_start-shift])
 				break
 		}
+		suff_start++
 		let t2 = null
 		
 		let token1

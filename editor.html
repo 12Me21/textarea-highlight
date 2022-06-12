@@ -66,24 +66,32 @@
 	.suffix {color: blue;}
 	
 	@keyframes new {
-		from {background: white;}
+		from {background: yellow;}
 	}
 	@keyframes new1 {
+		from { -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: currentColor;}
+		to { -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: transparent;}
+	}
+	@keyframes new2 {
+		from { -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: currentColor;}
+		to { -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: transparent;}
+	}
+	/*@keyframes new1 {
 		from {text-decoration: underline white;}
 		to {text-decoration: underline transparent; }
 	}
 	@keyframes new2 {
 		from {text-decoration: underline white;}
 		to {text-decoration: underline transparent; }
-	}
+	}*/
 	textarea-overlay > span[data-anim="true"] {
-		animation: new1 1s linear;
+		animation: new1 1s;
 	}
 	textarea-overlay > span[data-anim="false"] {
-		animation: new2 1s linear;
+		animation: new2 1s;
 	}
 	textarea-overlay > span[data-anim="new"] {
-		animation: new 1s linear;
+		animation: new 1s;
 	}
 </style>
 
@@ -123,7 +131,7 @@ replaced nodes: <span id=$status></span>
 		//$o.textContent = ""
 		let elem1 = $o.childNodes[t1+1]
 		let elem2 = t2==null ? null : $o.childNodes[t2]
-		$status.textContent = t1+".."+t2
+		$status.textContent = (t1+1)+".."+(t2==null ? "end" : t2-1)
 		let prev
 		for (let i=t1+1; i<nlen; i++) {
 			if (elem1==elem2) {
