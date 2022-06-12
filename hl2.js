@@ -17,7 +17,7 @@ function first_difference(str1, str2, tokens) {
 		if (i>=tokens[ti].end)
 			ti++
 	}
-	return ti
+	return ti-1
 }
 
 function suffix_length(str1, str2) {
@@ -38,14 +38,18 @@ class Parser {
 		let current, s_name
 		
 		let ti = first_difference(oldtext, text, oldtokens)
+		let suffix = suffix_length(oldtext, text)
+		let shift = text.length - oldtext.length
+		console.log("matching token:", ti)
+		
 		let token1
-		if (oldtokens[ti]) {
-			token1 = oldtokens[ti]
-			ti++
-		} else {
+		let tokens
+		if (ti<0)
 			token1 = {start:0, end:0, type:undefined, state:'data'}
-			ti = 0
-		}
+		else
+			token1 = oldtokens[ti]
+		ti++
+		tokens = oldtokens.slice(0, ti)
 		let lastIndex = token1.end
 		
 		let to_state = (name)=>{
@@ -58,8 +62,10 @@ class Parser {
 		function output(start, end, type) {
 			if (start==end)
 				return
-			oldtokens[ti++] = {start, end, type, state:s_name}
+			tokens[ti++] = {start, end, type, state:s_name}
 		}
+		
+		console.log("starting on char: "+lastIndex, "suffix: ", suffix)
 		
 		let match
 		while (match = current.regex.exec(text)) {
@@ -82,7 +88,7 @@ class Parser {
 				to_state(g.state)
 		}
 		output(lastIndex, text.length)
-		return oldtokens
+		return tokens
 	}
 }
 
