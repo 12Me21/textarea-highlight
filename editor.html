@@ -117,52 +117,12 @@ replaced nodes: <span id=$status></span>
 	}
 	x-performance.now()
 	
-	let tm = document.createDocumentFragment()
 	let lock=false
 	
-	let old_tokens=[], old_text=""
-	function update(input) {
-		let t = $i.innerText
-		let [tokens, t1, t2, nlen, ind] = htmlp.parse(t, old_text, old_tokens)
-		old_tokens = tokens
-		old_text = t
-		//console.log(prints(tokens))
-		//$o.textContent = t
-		//$o.textContent = ""
-		let elem1 = $o.childNodes[t1+1]
-		let elem2 = t2==null ? null : $o.childNodes[t2]
-		$status.textContent = (t1+1)+".."+(t2==null ? "end" : t2-1)
-		let prev
-		for (let i=t1+1; i<nlen; i++) {
-			if (elem1==elem2) {
-				elem1 = document.createElement('span')
-				$o.insertBefore(elem1, elem2)
-				elem1.dataset.anim = 'new'
-			} else {
-				elem1.dataset.anim = elem1.dataset.anim=='false'
-			}
-			elem1.textContent = t.substr(ind, tokens[i].len)
-			elem1.className = tokens[i].type
-			elem1 = elem1.nextSibling
-			ind += tokens[i].len
-		}
-		while (elem1!=elem2) {
-			let prev = elem1
-			elem1 = elem1.nextSibling
-			prev.remove()
-		}
-		
-		/*for (let x of tokens) {
-			let p = document.createElement('span')
-			if (x.type)
-				p.className = x.type
-			if (x.new==nw)
-				p.className += ' new'
-			p.textContent = t.substr(ind, x.len)
-			ind += x.len
-			$o.append(p)
-		}*/
+	function update() {
+		render($i.textContent, $o)
 	}
+	
 	fetch(location).then(x=>x.text()).then(x=>{
 		$i.textContent = x
 		update()

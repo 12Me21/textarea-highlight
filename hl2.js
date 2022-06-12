@@ -224,6 +224,31 @@ let htmlp = new Parser({
 `,
 })
 
-function update(elem, old, nw) {
-	
+let old_tokens=[], old_text=""
+function render(t, out) {
+	let [tokens, t1, t2, nlen, ind] = htmlp.parse(t, old_text, old_tokens)
+	old_tokens = tokens
+	old_text = t
+	let elem1 = out.childNodes[t1+1]
+	let elem2 = t2==null ? null : out.childNodes[t2]
+	$status.textContent = (t1+1)+".."+(t2==null ? "end" : t2-1)
+	let prev
+	for (let i=t1+1; i<nlen; i++) {
+		if (elem1==elem2) {
+			elem1 = document.createElement('span')
+			out.insertBefore(elem1, elem2)
+			elem1.dataset.anim = 'new'
+		} else {
+			elem1.dataset.anim = elem1.dataset.anim=='false'
+		}
+		elem1.textContent = t.substr(ind, tokens[i].len)
+		elem1.className = tokens[i].type
+		elem1 = elem1.nextSibling
+		ind += tokens[i].len
+	}
+	while (elem1!=elem2) {
+		let prev = elem1
+		elem1 = elem1.nextSibling
+		prev.remove()
+	}
 }
