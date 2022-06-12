@@ -97,7 +97,7 @@ plaintext
 
 let current_tag
 function handle_tag_start(match) {
-	current_tag = match
+	current_tag = match.toLowerCase()
 	return {token:'name', state:'in_tag'}
 }
 function handle_tag_end(match) {
@@ -105,17 +105,17 @@ function handle_tag_end(match) {
 	// RAWTEXT
 	if (tag=='style' || tag=='xmp' || tag=='iframe' || tag=='noembed' || tag=='noframes' || tag=='script' || tag=='noscript')
 		return {token:'tag', state:'rawtext'}
-	// RCDATA (close enough)
-	if (tag=='title' || tag=='textarea')
-		return {token:'tag', state:'rawtext'}
-	// script data (close enough)
+	// script data (close enough to RAWTEXT)
 	if (tag=='script')
 		return {token:'tag', state:'rawtext'}
+	// RCDATA
+	if (tag=='title' || tag=='textarea')
+		return {token:'tag', state:'rcdata'}
 	current_tag = null
 	return {token:'tag', state:'data'}
 }
 function handle_rawtext_end(match) {
-	if (match!="</"+current_tag)
+	if (match.toLowerCase() != "</"+current_tag)
 		return {state:'rawtext'}
 	current_tag = null
 	return {token:'tag', state:'in_tag'}
@@ -129,7 +129,10 @@ let htmlp = new Parser({
 <(?=/?[a-zA-Z])${{token:'tag', state:'tag'}}
 <!---?>${{token:'comment'}}
 <!--${{token:'comment', state:'comment'}}
-<[!?/][^>]*(>|$)${{token:'comment'}}
+<[!?/][^>]*>?${{token:'comment'}}
+`,
+	comment: STATE`
+(--!?>|$)${{token:'comment', state:'data'}}
 `,
 	tag: STATE`
 [a-zA-Z][^\s/>]*${handle_tag_start}
@@ -145,17 +148,15 @@ let htmlp = new Parser({
 (?:)${{state:'in_tag'}}
 `,
 	value: STATE`
-"[^"]*("|$)${{token:'value', state:'in_tag'}}
-'[^']*('|$)${{token:'value', state:'in_tag'}}
+"[^"]*"?${{token:'value', state:'in_tag'}}
+'[^']*'?${{token:'value', state:'in_tag'}}
 [^\s>]*${{token:'value', state:'in_tag'}}
 `,
-	comment: STATE`
-(--!?>|$)${{token:'comment', state:'data'}}
-`,
-	script: STATE`
-(?=</script(?![^\s/>])${{state:'data'}}|$${{state:'data'}})
-`,
 	rawtext: STATE`
+</[a-zA-Z]+(?![^\s/>])${handle_rawtext_end}
+`,
+	rcdata: STATE`
+&([a-zA-Z0-9]+|#[xX][0-9a-fA-F]+|#[0-9]+);?${{token:'charref'}}
 </[a-zA-Z]+(?![^\s/>])${handle_rawtext_end}
 `,
 })
