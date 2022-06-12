@@ -85,9 +85,15 @@
 	
 	let tm = document.createDocumentFragment()
 	let lock=false
+	
+	let old_tokens=[], old_text=""
 	function update(input) {
 		let t = $i.innerText
-		htmlp.parse(t, $o)
+		let tokens = htmlp.parse(t, old_text, old_tokens)
+		old_tokens = tokens
+		old_text = t
+		console.log(prints(tokens))
+		$o.textContent = t
 	}
 	fetch(location).then(x=>x.text()).then(x=>{
 		$i.textContent = x
@@ -110,3 +116,5 @@
 		draw_time($time2, t2-t1)
 	}), {passive: true})
 </script>
+
+<dheck<span></span>

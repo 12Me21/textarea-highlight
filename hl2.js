@@ -1,35 +1,69 @@
+function print(token) {
+	if (token.type)
+		return `${token.start}..${token.end} - ${token.state} : ${token.type}`
+	return `${token.start}..${token.end} - ${token.state}`
+}
+
+function prints(tokens) {
+	console.log(tokens.map(print).join("\n"))
+}
+
+function first_difference(str1, str2, tokens) {
+	let i
+	let ti = 0
+	for (i=0; i<str1.length; i++) {
+		if (str1[i] !== str2[i])
+			break
+		if (i>=tokens[ti].end)
+			ti++
+	}
+	return ti
+}
+
+function suffix_length(str1, str2) {
+	let i
+	for (i=0; i<str1.length; i++) {
+		if (str1[str1.length-1-i]!==str2[str2.length-1-i])
+			break
+	}
+	return i
+}
+
 class Parser {
 	constructor(states) {
 		this.states = states
 	}
-	parse(text, out) {
-		let elem = out.firstChild
+	parse(text, oldtext, oldtokens) {
 		let iloop = 0
+		let current, s_name
 		
-		let current
-		let lastIndex = 0
+		let ti = first_difference(oldtext, text, oldtokens)
+		let token1
+		if (oldtokens[ti]) {
+			token1 = oldtokens[ti]
+			ti++
+		} else {
+			token1 = {start:0, end:0, type:undefined, state:'data'}
+			ti = 0
+		}
+		let lastIndex = token1.end
+		
 		let to_state = (name)=>{
+			s_name = name
 			current = this.states[name]
 			current.regex.lastIndex = lastIndex
 		}
-		function output(text, token) {
-			if (text==="") return
-			if (!elem) {
-				elem = document.createElement('span')
-				out.appendChild(elem)
-			}
-			if (elem.textContent != text)
-				elem.textContent = text
-			token = token || ""
-			if (elem.className != token)
-				elem.className = token
-			elem = elem.nextSibling
+		to_state(token1.state)
+		
+		function output(start, end, type) {
+			if (start==end)
+				return
+			oldtokens[ti++] = {start, end, type, state:s_name}
 		}
 		
-		to_state('data')
 		let match
 		while (match = current.regex.exec(text)) {
-			output(text.substring(lastIndex, match.index))
+			output(lastIndex, match.index)
 			// infinite loop protection
 			if (lastIndex == current.regex.lastIndex) {
 				if (iloop++ > 5)
@@ -41,14 +75,14 @@ class Parser {
 			let g = current.groups[match.indexOf("", 1)-1]
 			if ('function'==typeof g)
 				g = g(match[0])
-			output(match[0], g.token)
+			if (g.state)
+				s_name = g.state
+			output(match.index, lastIndex, g.token)
 			if (g.state)
 				to_state(g.state)
 		}
-		output(text.substring(lastIndex))
-		if (elem)
-			while (elem.nextSibling)
-				elem.nextSibling.remove()
+		output(lastIndex, text.length)
+		return oldtokens
 	}
 }
 
@@ -163,3 +197,7 @@ let htmlp = new Parser({
 </[a-zA-Z]+(?![^\s/>])${handle_rawtext_end}
 `,
 })
+
+function update(elem, old, nw) {
+	
+}
