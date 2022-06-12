@@ -1,6 +1,6 @@
-<!doctype html>
-<meta charset=utf-8>
+<!doctype html><meta charset=utf-8>
 <meta name=viewport content="width=device-width, initial-scale=1, height=device-height">
+
 <script src=hl2.js></script>
 
 <style>
@@ -69,7 +69,10 @@
 	</textarea-container>
 </scroll-outer>
 
-<time id=$time></time>
+<table>
+	<tr> <th> parse/render: <td> <time id=$time1></time>ms
+	<tr> <th> repaint: <td> <time id=$time2></time>ms
+</table>
 
 <script>
 	let batch = (cb,w=0)=>e=>w++||requestAnimationFrame(_=>cb(e,w=0))
@@ -94,10 +97,17 @@
 	//$i.textContent = document.documentElement.innerHTML
 	update()
 	
+	function draw_time(elem, time) {
+		elem.textContent = time.toFixed(1)
+	}
+	
 	$i.addEventListener('input', batch(e=>{
-		let x = performance.now()
+		let t0 = performance.now()
 		update($i.value)
+		let t1 = performance.now()
 		$o.scrollHeight
-		$time.textContent = performance.now() - x
+		let t2 = performance.now()
+		draw_time($time1, t1-t0)
+		draw_time($time2, t2-t1)
 	}), {passive: true})
 </script>

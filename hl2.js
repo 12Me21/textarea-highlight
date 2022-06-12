@@ -2,7 +2,7 @@ function pre(text, cls) {
 	let p = document.createElement('span')
 	if (cls)
 		p.className = cls
-	p.append(text)
+	p.textContent = text
 	return p
 }
 
@@ -23,7 +23,7 @@ class Parser {
 		}
 		function output(text, token) {
 			if (text!=="")
-				out.append(pre(text, token))
+				out.appendChild(pre(text, token))
 		}
 		
 		to_state('data')
