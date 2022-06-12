@@ -62,7 +62,7 @@
 	.rawtext { color: silver; }
 	
 	.prefix {color: lime;}
-	.new {color: red;}
+	.new {text-decoration: underline;}
 	.suffix {color: blue;}
 </style>
 
@@ -101,15 +101,18 @@
 		$o.textContent = ""
 		for (let x of tokens) {
 			let p = document.createElement('span')
-			p.className = x.new
+			if (x.type)
+				p.className = x.type
+			if (x.new==nw)
+				p.className += ' new'
 			p.textContent = t.substring(x.start, x.end)
 			$o.append(p)
 		}
 	}
-/*	fetch(location).then(x=>x.text()).then(x=>{
+	fetch(location).then(x=>x.text()).then(x=>{
 		$i.textContent = x
 		update()
-	})*/
+	})
 	//$i.textContent = document.documentElement.innerHTML
 	update()
 	

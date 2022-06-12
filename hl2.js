@@ -29,6 +29,8 @@ function suffix_length(str1, str2, tokens) {
 	return i
 }
 
+let nw = 0
+
 class Parser {
 	constructor(states) {
 		this.states = states
@@ -36,7 +38,7 @@ class Parser {
 	parse(text, oldtext, oldtokens) {
 		let iloop = 0
 		let current, s_name
-		
+		nw++
 		let ti = first_difference(oldtext, text, oldtokens)
 		let suffix = suffix_length(oldtext, text)
 		let shift = text.length - oldtext.length
@@ -50,7 +52,7 @@ class Parser {
 		else
 			token1 = oldtokens[ti]
 		ti++
-		tokens = oldtokens.slice(0, ti).map(x=>0||{start:x.start,end:x.end,type:x.type,state:x.state, new:'prefix'})
+		tokens = oldtokens.slice(0, ti)
 		let lastIndex = token1.end
 		
 		let to_state = (name)=>{
@@ -74,7 +76,7 @@ class Parser {
 					}
 				}
 			}
-			tokens[ti++] = {start, end, type, state:s_name, new:'new'}
+			tokens[ti++] = {start, end, type, state:s_name, new:nw}
 		}
 		
 		//console.log("starting on char: "+lastIndex, "suffix: ", suffix)
@@ -100,7 +102,12 @@ class Parser {
 				to_state(g.state)
 			if (t2) {
 				//console.log('got sync!', oldtokens.length-t2)
-				tokens.push(...oldtokens.slice(t2).map(x=>0||{start:x.start+shift,end:x.end+shift,type:x.type,state:x.state,new:'suffix'}))
+				for (let i=t2; i<oldtokens.length; i++) {
+					let x = oldtokens[i]
+					x.start+=shift
+					x.end+=shift
+					tokens.push(x)
+				}
 				return tokens
 			}
 		}
