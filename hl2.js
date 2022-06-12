@@ -8,90 +8,108 @@ function pre(text, cls) {
 
 class Parser {
 	constructor(states) {
-		this.lastIndex = 0
-		this.text = ""
-		this.states = Object.create(null)
-		for (let [name, patterns] of Object.entries(states)) {
-			let groups = []
-			let r = patterns.join("|")
-				.replace(/\n/g, "|").replace(/\\`/g, "`")
-				.replace(/[(](?![?])/g, "(?:")
-				.replace(/[(][?]<(.*?)_(.*?)>[)]/g, (m, name, state)=>{
-					groups.push([name, state])
-					return "()"
-				})
-			let regex = new RegExp(r, 'g')
-			this.states[name] = {regex, groups}
-		}
+		this.states = states
 	}
 	parse(text, out) {
 		out.textContent = ""
-		let current = 'data'
-		let prev = -1
+		
 		let iloop = 0
+		
+		let current
 		let lastIndex = 0
-		while (1) {
-			if (lastIndex==prev) {
-				iloop++
-				if (iloop>5)
-					throw new Error('infinite loop '+lastIndex+"\n"+text.substring(lastIndex-10, 100))
+		let to_state = (name)=>{
+			current = this.states[name]
+			current.regex.lastIndex = lastIndex
+		}
+		function output(text, token) {
+			if (text!=="")
+				out.append(pre(text, token))
+		}
+		
+		to_state('data')
+		let match
+		while (match = current.regex.exec(text)) {
+			output(text.substring(lastIndex, match.index))
+			// infinite loop protection
+			if (lastIndex == current.regex.lastIndex) {
+				if (iloop++ > 5)
+					throw new Error('infinite loop '+lastIndex)
 			} else
 				iloop=0
-			prev = lastIndex
-			let st = this.states[current]
-			st.regex.lastIndex = lastIndex
-			let match = st.regex.exec(text)
-			if (!match)
-				break
-			let before = text.substring(lastIndex, match.index)
-			lastIndex = st.regex.lastIndex
-			let num = match.indexOf("", 1)-1
-			let g = st.groups[num]
-			if (before)
-				out.append(pre(before))
-			out.append(pre(match[0], g[0]))
-			if (g[1])
-				current = g[1]
+			// process match
+			lastIndex = current.regex.lastIndex
+			let g = current.groups[match.indexOf("", 1)-1]
+			output(match[0], g.token)
+			if (g.state)
+				to_state(g.state)
 		}
-		let after = text.substring(lastIndex)
-		if (after)
-			out.append(pre(after))
+		output(text.substring(lastIndex))
 	}
 }
 
+function STATE({raw}, ...values) {
+	let r = raw.join("()").slice(1, -1)
+		.replace(/\n/g, "|").replace(/\\`/g, "`")
+		.replace(/[(](?![?)])/g, "(?:")
+	let regex = new RegExp(r, 'g')
+	return {regex, groups: values}
+}
+
+/*
+
+attrs:
+
+before name:
+[\s/]*>  - data
+[\s/]*=?[^\s/>]+  - after name
+
+after name:
+\s*=\s*  - value
+(?:)  - before name
+
+value:
+"[^"]*("|$)  - before name
+'[^']*('|$)  - before name
+[^\s>]*  - before name
+> data
+
+*/
+
+// todo: function to determine new state
+// "default" highlight for skipped chars (i.e. within rawtext states)
+
 let htmlp = new Parser({
-	data: [
-		`&([a-zA-Z0-9]+|#[xX][0-9a-fA-F]+|#[0-9]+);?(?<charref_>)`,
-		`<![dD][oO][cC][tT][yY][pP][eE][^]*?(>|$)(?<doctype_>)`,
-		`<script>(?<tag_script>)`,
-		`<style>(?<tag_rawtext>)`,
-		`</?[a-z][^\t\n\f />]*/?(>(?<tag_>))?(?<tag_attributes>)`,
-		`<!---?>(?<error_>)`,
-		`<!--(?<comment_comment>)`,
-		`<[!?/][^>]*(>|$)(?<error_>)`,
-	],
-	comment: [
-		`[^]*?(?=--!?>|$)(?<commenttext_commentend>)`,
-	],
-	commentend: [
-		`--!?>(?<comment_data>)`,
-	],
-	script: [
-		`[^]*?(?=</script|$)(?<script_data>)`,
-	],
-	attributes: [
-		`[^\t\n\f />=]+(?<key_aftername>)`,
-		`>(?<tag_data>)`,
-	],
-	aftername: [
-		`\s*=\s*(?<_value>)`,
-		`(?<_attributes>)`,
-	],
-	value: [
-		`[^\t\n\f >]*(?<value_attributes>)`,
-		`(?<_attributes>)`,
-	],
-	rawtext: [
-		`[^]*?(?=</style|$)(?<rawtext_data>)`,
-	],
+	data: STATE`
+&([a-zA-Z0-9]+|#[xX][0-9a-fA-F]+|#[0-9]+);?${{token:'charref'}}
+<script>${{token:'tag', state:'script'}}
+<style>${{token:'tag', state:'rawtext'}}
+</?[a-zA-Z][^\s/>]*[\s/]*(/?>${{token:'tag'}})?${{token:'tag', state:'in_tag'}}
+<!---?>${{token:'comment'}}
+<!--${{token:'comment', state:'comment'}}
+<[!?][^>]*(>|$)${{token:'comment'}}
+`,
+	in_tag: STATE`
+[\s/]+${{state:'in_tag'}}
+>${{token:'tag', state:'data'}}
+=[^\s/>=]*${{token:'key', state:'after_key'}}
+[^\s/>=]+${{token:'key', state:'after_key'}}
+`,
+	after_key: STATE`
+\s*=\s*${{state:'value'}}
+(?:)${{state:'in_tag'}}
+`,
+	value: STATE`
+"[^"]*("|$)${{token:'value', state:'in_tag'}}
+'[^']*('|$)${{token:'value', state:'in_tag'}}
+[^\s>]*${{token:'value', state:'in_tag'}}
+`,
+	comment: STATE`
+(--!?>|$)${{token:'comment', state:'data'}}
+`,
+	script: STATE`
+(?=</script(?![^\s/>])${{state:'data'}}|$${{state:'data'}})
+`,
+	rawtext: STATE`
+(?=</style(?![^\s/>])${{state:'data'}}|$${{state:'data'}})
+`,
 })

@@ -1,0 +1,116 @@
+<!doctype html><meta charset=utf-8>
+<meta name=viewport content="width=device-width, initial-scale=1, height=device-height">
+<script src=hl2.js></script>
+
+<style>
+	textarea-container {
+		width: 700px;
+		height: 300px;
+		display: block;
+		position: relative;
+		overflow-y: scroll;
+		border: 3px solid black;
+		background: black;
+	}
+	textarea-container > * {
+		white-space: break-spaces !important; /* firefox's default css uses !important, and we want to override it */
+		white-space: pre-wrap;
+		word-break: break-word;
+		line-break: anywhere;
+		position: absolute;
+		display: block;
+		resize: none;
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		border: none;
+		
+		font: 1em Cascadia Code, Fira Code, consolas, monospace;
+		font-kerning: none;
+		font-variant-ligatures: none;
+		tab-size: 3; -moz-tab-size: 3;
+		height: 20000px;
+	}
+	textarea-container > textarea {
+		caret-color: white;
+		background: transparent;
+		color: transparent;
+ 		/*		text-shadow: 0 0 1px black;*/
+	}
+	textarea-overlay {
+		pointer-events: none;
+		background: black;
+		color: white;
+	}
+	
+	.comment {
+		color: #0C0;
+	}
+	.commenttext {
+		color: lime;
+	}
+	.tag {
+		color: cyan;
+		-webkit-text-stroke-width: .5px;
+	}
+	.doctype {
+		color: silver;
+	}
+	.charref {
+		color: magenta;
+	}
+	.key {
+		color: orange;
+	}
+	.value {
+		color: fuchsia;
+	}
+	.error {
+		-webkit-text-stroke-width: 0.5px;
+		-webkit-text-stroke-color: red;
+	}
+	.script {
+		color: silver;
+	}
+	.rawtext {
+		color: silver;
+	}
+	
+</style>
+<textarea-container>
+	<textarea-overlay id=$o></textarea-overlay>
+	<textarea id=$i spellcheck=false>TEST</textarea>
+</textarea-container>
+<time id=$time></time>
+<script>
+	let batch = (cb,w=0)=>e=>w++||requestAnimationFrame(_=>cb(e,w=0))
+	
+	x=performance.now()
+	for (let i=0; i<1000; i++) {
+		$o.textContent = ""
+	}
+	x-performance.now()
+	
+	let tm = document.createDocumentFragment()
+	let lock=false
+	function update(input) {
+		let t = $i.value
+		htmlp.parse(t, tm)
+		$o.replaceChildren(tm)
+	}
+	$i.value = document.documentElement.innerHTML
+	update()
+	
+	$i.addEventListener('input', batch(e=>{
+		let x = performance.now()
+		update($i.value)
+		$o.scrollHeight
+		$time.textContent = performance.now() - x
+	}), {passive: true})
+</script>
+
+
+<div></div
+
+<style=">" dddd>
