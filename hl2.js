@@ -11,22 +11,16 @@ function prints(tokens) {
 function first_difference(str1, str2, tokens) {
 	let i
 	let ti = 0
+	let ind = 0
 	for (i=0; i<str1.length; i++) {
 		if (str1[i] !== str2[i])
 			break
-		if (i>=tokens[ti].end)
+		if (i >= ind+tokens[ti].len) {
+			ind += tokens[ti].len
 			ti++
+		}
 	}
-	return ti-1
-}
-
-function suffix_length(str1, str2, tokens) {
-	let i
-	for (i=0; i<str1.length; i++) {
-		if (str1[str1.length-1-i]!==str2[str2.length-1-i])
-			break
-	}
-	return i
+	return [ti-1, ind]
 }
 
 let nw = 0
@@ -39,18 +33,25 @@ class Parser {
 		nw++
 		let iloop = 0
 		let current, s_name
-		let ti = first_difference(oldtext, text, oldtokens)
-		let suff_start = text.length - suffix_length(oldtext, text)
+		let [t1, ind] = first_difference(oldtext, text, oldtokens)
 		let shift = text.length - oldtext.length
+		let suff_start
+		for (suff_start=text.length; suff_start>=ind; suff_start--) {
+			if (text[suff_start] !== oldtext[suff_start-shift])
+				break
+		}
+		let t2 = null
 		
 		let token1
-		if (ti<0)
-			token1 = {start:0, end:0, type:undefined, state:'data'}
-		else
-			token1 = oldtokens[ti]
-		ti++
-		let tokens = oldtokens.slice(0, ti)
-		let lastIndex = token1.end
+		let tokens
+		if (t1<0) {
+			token1 = {len:0, type:undefined, state:'data'}
+			tokens = []
+		} else {
+			token1 = oldtokens[t1]
+			tokens = oldtokens.slice(0, t1+1)
+		}
+		let lastIndex = ind
 		
 		let to_state = (name)=>{
 			s_name = name
@@ -59,34 +60,34 @@ class Parser {
 		}
 		to_state(token1.state)
 		
-		let t2
-		
 		function output(start, end, type) {
 			if (start==end)
 				return
 			if (start >= suff_start) {
+				let ind=shift
 				for (let i=0; i<oldtokens.length; i++) {
 					let x = oldtokens[i]
-					if (x.start+shift == start && x.end+shift == end && x.type == type && x.state == s_name) {
-						for (; i<oldtokens.length; i++) {
-							let x = oldtokens[i]
-							x.start+=shift
-							x.end+=shift
-							tokens.push(x)
-						}
+					if (ind==start && ind+x.len==end && x.type==type && x.state == s_name) {
+						t2 = i
 						return true
 					}
+					ind += x.len
 				}
 			}
-			tokens[ti++] = {start, end, type, state:s_name, new:nw}
+			tokens.push({len:end-start, type, state:s_name, new:nw})
 		}
 		
+		function merge() {
+			if (t2==null)
+				return [tokens, t1, t2, tokens.length, ind]
+			return [tokens.concat(oldtokens.slice(t2)), t1, t2, tokens.length, ind]
+		}
 		//console.log("starting on char: "+lastIndex, "suffix: ", suffix)
 		
 		let match
 		while (match = current.regex.exec(text)) {
 			if (output(lastIndex, match.index))
-				return tokens
+				return merge()
 			// infinite loop protection
 			if (lastIndex == current.regex.lastIndex) {
 				if (iloop++ > 5)
@@ -101,12 +102,12 @@ class Parser {
 			if (g.state)
 				s_name = g.state
 			if (output(match.index, lastIndex, g.token))
-				return tokens
+				return merge()
 			if (g.state)
 				to_state(g.state)
 		}
 		output(lastIndex, text.length)
-		return tokens
+		return merge()
 	}
 }
 
@@ -158,7 +159,7 @@ plaintext
 
 let current_tag
 function handle_tag_start(match) {
-	current_tag = match.toLowerCase()
+	current_tag = 'a'//match.toLowerCase()
 	return {token:'name', state:'in_tag'}
 }
 function handle_tag_end(match) {

@@ -64,6 +64,27 @@
 	.prefix {color: lime;}
 	.new {text-decoration: underline;}
 	.suffix {color: blue;}
+	
+	@keyframes new {
+		from {background: white;}
+	}
+	@keyframes new1 {
+		from {text-decoration: underline white;}
+		to {text-decoration: underline transparent; }
+	}
+	@keyframes new2 {
+		from {text-decoration: underline white;}
+		to {text-decoration: underline transparent; }
+	}
+	textarea-overlay > span[data-anim="true"] {
+		animation: new1 1s linear;
+	}
+	textarea-overlay > span[data-anim="false"] {
+		animation: new2 1s linear;
+	}
+	textarea-overlay > span[data-anim="new"] {
+		animation: new 1s linear;
+	}
 </style>
 
 <scroll-outer>
@@ -73,6 +94,7 @@
 	</textarea-container>
 </scroll-outer>
 
+replaced nodes: <span id=$status></span>
 <table>
 	<tr> <th> parse/render: <td> <time id=$time1></time>ms
 	<tr> <th> repaint: <td> <time id=$time2></time>ms
@@ -93,21 +115,45 @@
 	let old_tokens=[], old_text=""
 	function update(input) {
 		let t = $i.innerText
-		let tokens = htmlp.parse(t, old_text, old_tokens)
+		let [tokens, t1, t2, nlen, ind] = htmlp.parse(t, old_text, old_tokens)
 		old_tokens = tokens
 		old_text = t
 		//console.log(prints(tokens))
 		//$o.textContent = t
-		$o.textContent = ""
-		for (let x of tokens) {
+		//$o.textContent = ""
+		let elem1 = $o.childNodes[t1+1]
+		let elem2 = t2==null ? null : $o.childNodes[t2]
+		$status.textContent = t1+".."+t2
+		let prev
+		for (let i=t1+1; i<nlen; i++) {
+			if (elem1==elem2) {
+				elem1 = document.createElement('span')
+				$o.insertBefore(elem1, elem2)
+				elem1.dataset.anim = 'new'
+			} else {
+				elem1.dataset.anim = elem1.dataset.anim=='false'
+			}
+			elem1.textContent = t.substr(ind, tokens[i].len)
+			elem1.className = tokens[i].type
+			elem1 = elem1.nextSibling
+			ind += tokens[i].len
+		}
+		while (elem1!=elem2) {
+			let prev = elem1
+			elem1 = elem1.nextSibling
+			prev.remove()
+		}
+		
+		/*for (let x of tokens) {
 			let p = document.createElement('span')
 			if (x.type)
 				p.className = x.type
 			if (x.new==nw)
 				p.className += ' new'
-			p.textContent = t.substring(x.start, x.end)
+			p.textContent = t.substr(ind, x.len)
+			ind += x.len
 			$o.append(p)
-		}
+		}*/
 	}
 	fetch(location).then(x=>x.text()).then(x=>{
 		$i.textContent = x
