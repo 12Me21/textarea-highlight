@@ -41,7 +41,7 @@ class Parser {
 		let suffix = suffix_length(oldtext, text)
 		let shift = text.length - oldtext.length
 		let suff_start = text.length-suffix
-		console.log("matching token:", ti)
+		//console.log("matching token:", ti)
 		
 		let token1
 		let tokens
@@ -50,7 +50,7 @@ class Parser {
 		else
 			token1 = oldtokens[ti]
 		ti++
-		tokens = oldtokens.slice(0, ti)
+		tokens = oldtokens.slice(0, ti).map(x=>0||{start:x.start,end:x.end,type:x.type,state:x.state, new:'prefix'})
 		let lastIndex = token1.end
 		
 		let to_state = (name)=>{
@@ -74,10 +74,10 @@ class Parser {
 					}
 				}
 			}
-			tokens[ti++] = {start, end, type, state:s_name}
+			tokens[ti++] = {start, end, type, state:s_name, new:'new'}
 		}
 		
-		console.log("starting on char: "+lastIndex, "suffix: ", suffix)
+		//console.log("starting on char: "+lastIndex, "suffix: ", suffix)
 		
 		let match
 		while (match = current.regex.exec(text)) {
@@ -99,8 +99,8 @@ class Parser {
 			if (g.state)
 				to_state(g.state)
 			if (t2) {
-				console.log('got sync!', t2)
-				tokens.push(...oldtokens.slice(t2).map(x=>0||{start:x.start+shift,end:x.end+shift,type:x.type,state:x.state}))
+				//console.log('got sync!', oldtokens.length-t2)
+				tokens.push(...oldtokens.slice(t2).map(x=>0||{start:x.start+shift,end:x.end+shift,type:x.type,state:x.state,new:'suffix'}))
 				return tokens
 			}
 		}

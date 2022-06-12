@@ -60,12 +60,16 @@
 	.error { -webkit-text-stroke-width: 0.5px; -webkit-text-stroke-color: red; }
 	.script { color: silver; }
 	.rawtext { color: silver; }
+	
+	.prefix {color: lime;}
+	.new {color: red;}
+	.suffix {color: blue;}
 </style>
 
 <scroll-outer>
 	<textarea-container id=$c>
 		<textarea-overlay id=$o></textarea-overlay>
-		<p class='textarea' contenteditable id=$i spellcheck=false>TEST</p>
+		<p class='textarea' contenteditable id=$i spellcheck=false>TEST&lt;div>HECK</p>
 	</textarea-container>
 </scroll-outer>
 
@@ -92,8 +96,15 @@
 		let tokens = htmlp.parse(t, old_text, old_tokens)
 		old_tokens = tokens
 		old_text = t
-		console.log(prints(tokens))
-		$o.textContent = t
+		//console.log(prints(tokens))
+		//$o.textContent = t
+		$o.textContent = ""
+		for (let x of tokens) {
+			let p = document.createElement('span')
+			p.className = x.new
+			p.textContent = t.substring(x.start, x.end)
+			$o.append(p)
+		}
 	}
 /*	fetch(location).then(x=>x.text()).then(x=>{
 		$i.textContent = x
