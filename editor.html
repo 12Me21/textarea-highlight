@@ -87,8 +87,7 @@
 	let lock=false
 	function update(input) {
 		let t = $i.innerText
-		htmlp.parse(t, tm)
-		$o.replaceChildren(tm)
+		htmlp.parse(t, $o)
 	}
 	fetch(location).then(x=>x.text()).then(x=>{
 		$i.textContent = x

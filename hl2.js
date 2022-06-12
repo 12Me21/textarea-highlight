@@ -1,18 +1,9 @@
-function pre(text, cls) {
-	let p = document.createElement('span')
-	if (cls)
-		p.className = cls
-	p.textContent = text
-	return p
-}
-
 class Parser {
 	constructor(states) {
 		this.states = states
 	}
 	parse(text, out) {
-		out.textContent = ""
-		
+		let elem = out.firstChild
 		let iloop = 0
 		
 		let current
@@ -22,8 +13,17 @@ class Parser {
 			current.regex.lastIndex = lastIndex
 		}
 		function output(text, token) {
-			if (text!=="")
-				out.appendChild(pre(text, token))
+			if (text==="") return
+			if (!elem) {
+				elem = document.createElement('span')
+				out.appendChild(elem)
+			}
+			if (elem.textContent != text)
+				elem.textContent = text
+			token = token || ""
+			if (elem.className != token)
+				elem.className = token
+			elem = elem.nextSibling
 		}
 		
 		to_state('data')
@@ -46,6 +46,9 @@ class Parser {
 				to_state(g.state)
 		}
 		output(text.substring(lastIndex))
+		if (elem)
+			while (elem.nextSibling)
+				elem.nextSibling.remove()
 	}
 }
 
