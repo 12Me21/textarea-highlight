@@ -65,14 +65,14 @@ class Parser {
 			if (start==end)
 				return
 			if (start >= suff_start) {
-				let ind=shift
-				for (let i=0; i<oldtokens.length; i++) {
+				let ind2=ind+shift
+				for (let i=t1+1; i<oldtokens.length; i++) {
 					let x = oldtokens[i]
-					if (ind==start && ind+x.len==end && x.type==type && x.state == s_name) {
+					if (ind2==start && ind2+x.len==end && x.type==type && x.state == s_name) {
 						t2 = i
 						return true
 					}
-					ind += x.len
+					ind2 += x.len
 				}
 			}
 			tokens.push({len:end-start, type, state:s_name, new:nw})

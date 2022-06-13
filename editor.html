@@ -1,99 +1,8 @@
 <!doctype html><meta charset=utf-8>
 <meta name=viewport content="width=device-width, initial-scale=1, height=device-height">
 
+<link rel=stylesheet href=style.css>
 <script src=hl2.js></script>
-
-<style>
-	scroll-outer {
-		display: block;
-		overflow-y: scroll;
-		width: 700px;
-		height: 500px;
-	}
-	
-	textarea-container {
-		display: block;
-		position: relative;
-		border: 3px solid black;
-		background: black;
-	}
-	textarea-container > * {
-		display: block;
-		
-		margin: 0;
-		padding: 0;
-		border: none;
-		overflow-y: visible;
-		width: 100%;
-		
-		white-space: pre-wrap;
-		word-break: break-word;
-		line-break: anywhere;
-		
-		font: 1em Cascadia Code, Fira Code, consolas, monospace;
-		font-kerning: none;
-		font-variant-ligatures: none;
-		tab-size: 3; -moz-tab-size: 3;
-	}
-	textarea-container > .textarea {
-		position: relative;
-		z-index: 1;
-		
-		background: transparent;
-		color: transparent;
-		caret-color: white;
-	}
-	textarea-overlay {
-		position: absolute;
-		pointer-events: none;
-		background: black;
-		color: white;
-	}
-	.name { color: cyan; -webkit-text-stroke-width: .5px; }
-	.comment { color: #0C0; }
-	.commenttext { color: lime; }
-	.tag { color: #0AF; }
-	.doctype { color: silver; }
-	.charref { color: magenta; }
-	.key { color: orange; }
-	.value { color: fuchsia; }
-	.error { -webkit-text-stroke-width: 0.5px; -webkit-text-stroke-color: red; }
-	.script { color: silver; }
-	.rawtext { color: silver; }
-	
-	.prefix {color: lime;}
-	.new {text-decoration: underline;}
-	.suffix {color: blue;}
-	
-	@keyframes new {
-		from {background: yellow;}
-	}
-	@keyframes new1 {
-		from { -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: currentColor;}
-		to { -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: transparent;}
-	}
-	@keyframes new2 {
-		from { -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: currentColor;}
-		to { -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: transparent;}
-	}
-	/*@keyframes new1 {
-		from {text-decoration: underline white;}
-		to {text-decoration: underline transparent; }
-	}
-	@keyframes new2 {
-		from {text-decoration: underline white;}
-		to {text-decoration: underline transparent; }
-	}*/
-	textarea-overlay > span[data-anim="true"] {
-		animation: new1 1s;
-	}
-	textarea-overlay > span[data-anim="false"] {
-		animation: new2 1s;
-	}
-	textarea-overlay > span[data-anim="new"] {
-		animation: new 1s;
-	}
-</style>
 
 <scroll-outer>
 	<textarea-container id=$c>
@@ -111,23 +20,15 @@ replaced nodes: <span id=$status></span>
 <script>
 	let batch = (cb,w=0)=>e=>w++||requestAnimationFrame(_=>cb(e,w=0))
 	
-	x=performance.now()
-	for (let i=0; i<1000; i++) {
-		$o.textContent = ""
-	}
-	x-performance.now()
-	
-	let lock=false
-	
 	function update() {
-		render($i.textContent, $o)
+		render($i.innerText, $o)
 	}
 	
 	fetch(location).then(x=>x.text()).then(x=>{
 		$i.textContent = x
 		update()
 	})
-	//$i.textContent = document.documentElement.innerHTML
+	
 	update()
 	
 	function draw_time(elem, time) {
@@ -144,5 +45,3 @@ replaced nodes: <span id=$status></span>
 		draw_time($time2, t2-t1)
 	}), {passive: true})
 </script>
-
-<dheck<span></span>
