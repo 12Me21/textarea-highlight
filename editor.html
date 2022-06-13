@@ -25,7 +25,7 @@ replaced nodes: <span id=$status></span>
 	}
 	
 	fetch(location).then(x=>x.text()).then(x=>{
-		$i.textContent = x
+		$i.innerText = x
 		update()
 	})
 	
@@ -42,7 +42,7 @@ replaced nodes: <span id=$status></span>
 	
 	$i.addEventListener('input', batch(e=>{
 		let t0 = performance.now()
-		update($i.value)
+		update()
 		let t1 = performance.now()
 		$o.scrollHeight
 		let t2 = performance.now()

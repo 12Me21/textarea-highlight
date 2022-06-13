@@ -1,3 +1,7 @@
+* {
+	-webkit-text-size-adjust: none !important;
+}
+
 scroll-outer {
 	display: block;
 	overflow-y: scroll;
@@ -24,10 +28,11 @@ textarea-container > * {
 	word-break: break-word;
 	line-break: anywhere;
 	
-	font: 1em Cascadia Code, Fira Code, consolas, monospace;
+	font: 1rem Cascadia Code, Fira Code, consolas, monospace, monospace;
 	font-kerning: none;
 	font-variant-ligatures: none;
 	tab-size: 3; -moz-tab-size: 3;
+	-webkit-text-size-adjust: none;
 }
 textarea-container > .textarea {
 	position: relative;
@@ -43,7 +48,7 @@ textarea-overlay {
 	background: black;
 	color: white;
 }
-.name { color: cyan; -webkit-text-stroke-width: .5px; }
+.name { color: cyan; }
 .comment { color: #0C0; }
 .commenttext { color: lime; }
 .tag { color: #0AF; }
@@ -51,7 +56,6 @@ textarea-overlay {
 .charref { color: magenta; }
 .key { color: orange; }
 .value { color: fuchsia; }
-.error { -webkit-text-stroke-width: 0.5px; -webkit-text-stroke-color: red; }
 .script { color: silver; }
 .rawtext { color: silver; }
 
@@ -81,3 +85,4 @@ textarea-overlay > span[data-anim="false"] {
 textarea-overlay > span[data-anim="new"] {
 	animation: new 1s;
 }
+/*🯅🯆🯇🯈🯉*/

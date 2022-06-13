@@ -194,6 +194,7 @@ let htmlp = new Parser({
 <!---?>${{token:'comment'}}
 <!--${{token:'comment', state:'comment'}}
 <[!?/][^>]*>?${{token:'comment'}}
+\n${{}}
 `,
 	comment: STATE`
 (--!?>|$)${{token:'comment', state:'data'}}
