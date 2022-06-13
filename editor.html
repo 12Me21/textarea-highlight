@@ -7,46 +7,101 @@
 <scroll-outer>
 	<textarea-container id=$c>
 		<textarea-overlay id=$o></textarea-overlay>
-		<p class='textarea' contenteditable id=$i spellcheck=false>TEST&lt;div>HECK</p>
+		<textarea class='textarea' id=$i spellcheck=false>TEST&lt;div>HECK</textarea>
 	</textarea-container>
 </scroll-outer>
 
 replaced nodes: <span id=$status></span>
 <table>
+	<tr> <th> resize: <td> <time id=$time0></time>ms
 	<tr> <th> parse/render: <td> <time id=$time1></time>ms
 	<tr> <th> repaint: <td> <time id=$time2></time>ms
 </table>
+<canvas height=200 width=500 id=$canvas></canvas>
 
 <script>
-	let batch = (cb,w=0)=>e=>w++||requestAnimationFrame(_=>cb(e,w=0))
+	let c2d = $canvas.getContext('2d')
+	let cx
+	let center = 100
+	function reset_graph() {
+		c2d.clearRect(10,0,500,200)
+		c2d.fillStyle = 'black'
+		c2d.fillRect(0,0,1,200)
+		c2d.fillRect(0,100,9,1)
+		for (let i=0; i<=50; i+=10) {
+			c2d.fillRect(0,center - i*2 - 0.5,500,1)
+			c2d.fillRect(0,center+1 + i*2 - 0.5,500,1)
+		}
+		cx=10
+	}
+	reset_graph()
+	//c2d.fillRect(0,center,9,1)
+	function graph_time(t0, after, before) {
+		cx++
+		if (cx>=500)
+			reset_graph()
+		c2d.fillStyle = 'white'
+		c2d.fillRect(cx,center,1,1)
+		for (let i=after.length-1; i>=1; i-=2) {
+			let t = after[i]
+			c2d.fillStyle = after[i-1]
+			c2d.fillRect(cx,center,1,-(t-t0)*2)
+		}
+		for (let i=before.length-1; i>=1; i-=2) {
+			let t = before[i]
+			c2d.fillStyle = before[i-1]
+			c2d.fillRect(cx,center+1,1,-(t-t0)*2)
+		}
+	}
 	
 	function update() {
-		render($i.innerText, $o)
+		render($i.value, $o)
+	}
+	function resize() {
+		$i.style.height = "0"
+		$i.parentNode.style.height = `${$i.scrollHeight+1}px`
+		$i.style.height = "100%"
 	}
 	
 	fetch(location).then(x=>x.text()).then(x=>{
-		$i.innerText = x
+		$i.value = x
+		resize()
 		update()
 	})
 	
+	resize()
 	update()
 	
 	function draw_time(elem, time) {
 		elem.textContent = time.toFixed(1)
 	}
+	let kdt
+	$i.addEventListener('keydown', e=>{
+		kdt = performance.now()
+	}, {passive:true})
 	
-	$i.onpaste = e=>{
-		e.preventDefault()
-		document.execCommand('insertText', false, e.clipboardData.getData('text'))
-	}
-	
-	$i.addEventListener('input', batch(e=>{
-		let t0 = performance.now()
-		update()
-		let t1 = performance.now()
-		$o.scrollHeight
-		let t2 = performance.now()
-		draw_time($time1, t1-t0)
-		draw_time($time2, t2-t1)
-	}), {passive: true})
+	let lock = false
+	$i.addEventListener('input', e=>{
+		let tk = kdt
+		let ta = performance.now()
+		resize()
+		let tb = performance.now()
+		if (lock) {
+			cx+=1
+			return
+		}
+		lock = true
+		requestAnimationFrame(()=>{
+			lock = false
+			let t0 = performance.now()
+			update()
+			let t1 = performance.now()
+			$o.scrollHeight
+			let t2 = performance.now()
+			graph_time(e.timeStamp, ['red', ta, 'teal', tb, 'pink', t0, 'lightblue', t1, 'purple', t2], ['gray', tk])
+			draw_time($time0, tb-ta)
+			draw_time($time1, t1-t0)
+			draw_time($time2, t2-t1)
+		})
+	}, {passive: true})
 </script>
