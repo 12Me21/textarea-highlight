@@ -10,13 +10,18 @@ scroll-outer {
 	max-width: stretch;
 	width: 700px;
 	height: 500px;
+	border: 10px solid black;
+	background: black;
 }
 
 textarea-container {
 	display: block;
 	position: relative;
-	border: 3px solid black;
 	background: black;
+}
+textarea-container > textarea {
+	height: 100%;
+	resize: none;
 }
 textarea-container > * {
 	display: block;
@@ -40,7 +45,8 @@ textarea-container > * {
 	-webkit-text-size-adjust: none;
 }
 textarea-container > .textarea {
-	position: relative;
+	position: absolute;
+	top: 0;
 	z-index: 1;
 	
 	background: transparent;
@@ -48,10 +54,13 @@ textarea-container > .textarea {
 	caret-color: white;
 }
 textarea-overlay {
-	position: absolute;
 	pointer-events: none;
 	background: black;
 	color: white;
+}
+/* necessary to avoid hiding last linebreak */
+textarea-overlay::after {
+	content: "";
 }
 .name { color: cyan; }
 .comment { color: #0C0; }

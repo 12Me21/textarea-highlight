@@ -229,12 +229,17 @@ let htmlp = new Parser({
 let old_tokens=[], old_text=""
 function render(t, out) {
 	let [tokens, t1, t2, nlen, ind] = htmlp.parse(t, old_text, old_tokens)
+	let pp = performance.now()
 	old_tokens = tokens
 	old_text = t
 	let elem1 = out.childNodes[t1+1]
 	let elem2 = t2==null ? null : out.childNodes[t2]
 	$status.textContent = (t1+1)+".."+(t2==null ? "end" : t2-1)
 	let prev
+	// todo: delete nodes with this?
+	//let range = document.createRange()
+	//range.setStart(out, nlen)
+	//range.setEndBefore(out, t2)
 	for (let i=t1+1; i<nlen; i++) {
 		let changed
 		if (elem1==elem2) {
@@ -248,11 +253,11 @@ function render(t, out) {
 			changed = true
 		}
 		if (elem1.className != tokens[i].type) {
-			elem1.className = tokens[i].type
+			elem1.className = tokens[i].type||""
 			changed = true
 		}
-		if (changed)
-			elem1.dataset.anim = elem1.dataset.anim=='false'
+//		if (changed)
+		//	elem1.dataset.anim = elem1.dataset.anim=='false'
 		elem1 = elem1.nextSibling
 		ind += tokens[i].len
 	}
@@ -261,4 +266,5 @@ function render(t, out) {
 		elem1 = elem1.nextSibling
 		prev.remove()
 	}
+	return pp
 }
