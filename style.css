@@ -60,7 +60,7 @@ textarea-overlay {
 }
 /* necessary to avoid hiding last linebreak */
 textarea-overlay::after {
-	content: "";
+	content: "\A";
 }
 .name { color: cyan; }
 .comment { color: #0C0; }
