@@ -79,5 +79,5 @@ textarea-overlay > span[data-anim="false"] {
 	animation: new2 1s;
 }
 textarea-overlay > span[data-anim="new"] {
-	
+	animation: new 1s;
 }

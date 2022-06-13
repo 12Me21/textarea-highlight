@@ -35,6 +35,11 @@ replaced nodes: <span id=$status></span>
 		elem.textContent = time.toFixed(1)
 	}
 	
+	$i.onpaste = e=>{
+		e.preventDefault()
+		document.execCommand('insertText', false, e.clipboardData.getData('text'))
+	}
+	
 	$i.addEventListener('input', batch(e=>{
 		let t0 = performance.now()
 		update($i.value)

@@ -12,8 +12,9 @@ function first_difference(str1, str2, tokens) {
 	let i
 	let ti = 0
 	let ind = 0
-	for (i=0; i<str1.length; i++) {
-		if (str1[i] !== str2[i])
+	let offset = 1 // account for regex lookahead..
+	for (i=-offset; i<str1.length; i++) {
+		if (str1[i+offset] !== str2[i+offset])
 			break
 		if (i >= ind+tokens[ti].len) {
 			ind += tokens[ti].len
@@ -68,7 +69,7 @@ class Parser {
 				let ind2=ind+shift
 				for (let i=t1+1; i<oldtokens.length; i++) {
 					let x = oldtokens[i]
-					if (ind2==start && ind2+x.len==end && x.type==type && x.state == s_name) {
+					if (ind2==start && ind2+x.len==end && x.type==type && x.state==s_name) {
 						t2 = i
 						return true
 					}
@@ -234,15 +235,23 @@ function render(t, out) {
 	$status.textContent = (t1+1)+".."+(t2==null ? "end" : t2-1)
 	let prev
 	for (let i=t1+1; i<nlen; i++) {
+		let changed
 		if (elem1==elem2) {
 			elem1 = document.createElement('span')
 			out.insertBefore(elem1, elem2)
-			elem1.dataset.anim = 'new'
-		} else {
-			elem1.dataset.anim = elem1.dataset.anim=='false'
+			changed = true
 		}
-		elem1.textContent = t.substr(ind, tokens[i].len)
-		elem1.className = tokens[i].type
+		let text = t.substr(ind, tokens[i].len)
+		if (elem1.textContent != text) {
+			elem1.textContent = text
+			changed = true
+		}
+		if (elem1.className != tokens[i].type) {
+			elem1.className = tokens[i].type
+			changed = true
+		}
+		if (changed)
+			elem1.dataset.anim = elem1.dataset.anim=='false'
 		elem1 = elem1.nextSibling
 		ind += tokens[i].len
 	}
