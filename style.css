@@ -104,3 +104,19 @@ textarea-overlay > span[data-anim="new"] {
 	animation: new 1s;
 }
 /*🯅🯆🯇🯈🯉*/
+
+	span.word {
+		color: #DEF;
+	}
+	span.comment {
+		color: #a1f198;
+		font-style: italic;
+	}
+	span.string { color: #9C9; }
+	span.operator { color: #BB7; }
+	span.keyword { color: #2494f0; }
+	span.constant { color: #f359ab; }
+	span.property { color: #D9B; }
+	span.flow { color: #2494f0; }
+	span.semicolon { color: #CF0; }
+	span.assignment { color: goldenrod; }
