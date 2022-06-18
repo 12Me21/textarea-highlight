@@ -1,95 +1,34 @@
-function print(token) {
-	if (token.type)
-		return `${token.start}..${token.end} - ${token.state} : ${token.type}`
-	return `${token.start}..${token.end} - ${token.state}`
-}
-
-function prints(tokens) {
-	console.log(tokens.map(print).join("\n"))
-}
-
-function first_difference(str1, str2, tokens) {
-	let i
-	let ti = 0
-	let ind = 0
-	let offset = 1 // account for regex lookahead..
-	for (i=-offset; i<str1.length; i++) {
-		if (str1[i+offset] !== str2[i+offset])
-			break
-		if (i >= ind+tokens[ti].len) {
-			ind += tokens[ti].len
-			ti++
-		}
-	}
-	return [ti-1, ind]
-}
-
-let nw = 0
+'use strict'
 
 class Parser {
 	constructor(states) {
 		this.states = states
 	}
-	parse(text, oldtext, oldtokens) {
-		nw++
+	parse(text, elem) {
 		let iloop = 0
-		let current, s_name
-		let [t1, ind] = first_difference(oldtext, text, oldtokens)
-		let shift = text.length - oldtext.length
-		let suff_start
-		for (suff_start=text.length; suff_start>=ind; suff_start--) {
-			if (text[suff_start] !== oldtext[suff_start-shift])
-				break
-		}
-		suff_start++
-		let t2 = null
+		let current
 		
-		let token1
-		let tokens
-		if (t1<0) {
-			token1 = {len:0, type:undefined, state:'data'}
-			tokens = []
-		} else {
-			token1 = oldtokens[t1]
-			tokens = oldtokens.slice(0, t1+1)
-		}
-		let lastIndex = ind
+		let lastIndex = 0
 		
 		let to_state = (name)=>{
-			s_name = name
 			current = this.states[name]
 			current.regex.lastIndex = lastIndex
 		}
-		to_state(token1.state)
+		elem.textContent = ""
+		to_state("data")
 		
 		function output(start, end, type) {
 			if (start==end)
 				return
-			if (start >= suff_start) {
-				let ind2=ind+shift
-				for (let i=t1+1; i<oldtokens.length; i++) {
-					let x = oldtokens[i]
-					if (ind2==start && ind2+x.len==end && x.type==type && x.state==s_name) {
-						t2 = i
-						return true
-					}
-					ind2 += x.len
-				}
-			}
-			tokens.push({len:end-start, type, state:s_name, new:nw})
+			let p = document.createElement('span')
+			p.className = type
+			p.textContent = text.substring(start, end)
+			elem.appendChild(p)
 		}
-		
-		function merge() {
-			if (t2==null)
-				return [tokens, t1, t2, tokens.length, ind]
-			return [tokens.concat(oldtokens.slice(t2)), t1, t2, tokens.length, ind]
-		}
-		//console.log("starting on char: "+lastIndex, "suffix: ", suffix)
 		
 		let match
 		while (match = current.regex.exec(text)) {
-			if (output(lastIndex, match.index))
-				return merge()
+			output(lastIndex, match.index)
 			// infinite loop protection
 			if (lastIndex == current.regex.lastIndex) {
 				if (iloop++ > 5)
@@ -101,15 +40,11 @@ class Parser {
 			let g = current.groups[match.indexOf("", 1)-1]
 			if ('function'==typeof g)
 				g = g(match[0])
-			if (g.state)
-				s_name = g.state
-			if (output(match.index, lastIndex, g.token))
-				return merge()
+			output(match.index, lastIndex, g.token)
 			if (g.state)
 				to_state(g.state)
 		}
 		output(lastIndex, text.length)
-		return merge()
 	}
 }
 
@@ -121,150 +56,41 @@ function STATE({raw}, ...values) {
 	return {regex, groups: values}
 }
 
-/*
-
-attrs:
-
-before name:
-[\s/]*>  - data
-[\s/]*=?[^\s/>]+  - after name
-
-after name:
-\s*=\s*  - value
-(?:)  - before name
-
-value:
-"[^"]*("|$)  - before name
-'[^']*('|$)  - before name
-[^\s>]*  - before name
-> data
-
-*/
-
-/* the state of the HTML parser's tokenization stage as follows, switching on the context element:
-
-title
-textarea
-    Switch the tokenizer to the RCDATA state.
-style
-xmp
-iframe
-noembed
-noframes
-    Switch the tokenizer to the RAWTEXT state.
-script
-    Switch the tokenizer to the script data state.
-noscript
-    If the scripting flag is enabled, switch the tokenizer to the RAWTEXT state. Otherwise, leave the tokenizer in the data state.
-plaintext
-*/
-
-let current_tag
-function handle_tag_start(match) {
-	current_tag = 'a'//match.toLowerCase()
-	return {token:'name', state:'in_tag'}
-}
-function handle_tag_end(match) {
-	let tag = current_tag
-	// RAWTEXT
-	if (tag=='style' || tag=='xmp' || tag=='iframe' || tag=='noembed' || tag=='noframes' || tag=='script' || tag=='noscript')
-		return {token:'tag', state:'rawtext'}
-	// script data (close enough to RAWTEXT)
-	if (tag=='script')
-		return {token:'tag', state:'rawtext'}
-	// RCDATA
-	if (tag=='title' || tag=='textarea')
-		return {token:'tag', state:'rcdata'}
-	current_tag = null
-	return {token:'tag', state:'data'}
-}
-function handle_rawtext_end(match) {
-	if (match.toLowerCase() != "</"+current_tag)
-		return {state:'rawtext'}
-	current_tag = null
-	return {token:'tag', state:'in_tag'}
-}
-// todo: function to determine new state
-// "default" highlight for skipped chars (i.e. within rawtext states)
-
-let htmlp = new Parser({
+let parse_js = new Parser({
 	data: STATE`
-&([a-zA-Z0-9]+|#[xX][0-9a-fA-F]+|#[0-9]+);?${{token:'charref'}}
-<(?=/?[a-zA-Z])${{token:'tag', state:'tag'}}
-<!---?>${{token:'comment'}}
-<!--${{token:'comment', state:'comment'}}
-<[!?/][^>]*>?${{token:'comment'}}
+(break|catch|class|continue|default|do|else|finally|for|function|if|switch|try|while|with|case|return|throw|yield|yield|=>)(?![\w$])${{token:'flow'}}
+(typeof|await|delete|void|in|instanceof|new)(?![\w$])${{token:'operator'}}
+[?]?[.]\s*${{state:'property'}}
+([+-]{2}|[!=]==?|[!~])${{token:'operator'}}
+=${{token:'assignment'}}
+([-*%+&^|]|[*<>&|?]{2}|>>>)(=${{token:'assignment'}})?${{token:'operator'}}
+([?]|:|[<>]=?)${{token:'operator'}}
+(super|this)(?![\w$])${{token:'keyword', state:'after_value'}}
+(const|debugger|export|import|var|enum|implements|interface|let|package|private|protected|public|static|extends)(?![\w$])${{token:'keyword'}}
+(?!\d)[\w$]+(?=\s*:)${{token:'property', state:'after_label'}}
+(?!\d)[\w$]+${{token:'word', state:'after_value'}}
+/(?![*/])([^/\n\\]+|\\.)*?(/[idgmuy]*|\n|$)${{token:'string', state:'after_value'}}
+"([^\n\\"]+|\\[^])*?("|\n|$)${{token:'string', state:'after_value'}}
+'([^\n\\']+|\\[^])*?('|\n|$)${{token:'string', state:'after_value'}}
+\`([^\\\`]+|\\[^])*?(\`|$)${{token:'string', state:'after_value'}}
+//.*${{token:'comment'}}
+/[*][^]*?([*]/|$)${{token:'comment'}}
+<!--.*${{token:'comment'}}
+(0[xXbBoO]|[.])?[\dA-Fa-f]+(_?[\dA-Fa-f]+)*${{token:'constant', state:'after_value'}}
 \n${{}}
+;${{token:'semicolon'}}
 `,
-	comment: STATE`
-(--!?>|$)${{token:'comment', state:'data'}}
+	after_value: STATE`
+/=${{token:'assignment'}}
+/${{token:'operator'}}
+[+-]{2}${{token:'operator'}}
+${{state:'data'}}
 `,
-	tag: STATE`
-[a-zA-Z][^\s/>]*${handle_tag_start}
-/[a-zA-Z][^\s/>]*${{token:'name', state:'in_tag'}}
-`,	
-	in_tag: STATE`
-[\s/]*(>${handle_tag_end}
-=[^\s/>=]*${{token:'key', state:'after_key'}}
-[^\s/>=]+${{token:'key', state:'after_key'}})
+	property: STATE`
+(?!\d)[\w$]+${{token:'property', state:'data'}}
+${{state:'data'}}
 `,
-	after_key: STATE`
-\s*=\s*${{state:'value'}}
-(?:)${{state:'in_tag'}}
-`,
-	value: STATE`
-"[^"]*"?${{token:'value', state:'in_tag'}}
-'[^']*'?${{token:'value', state:'in_tag'}}
-[^\s>]*${{token:'value', state:'in_tag'}}
-`,
-	rawtext: STATE`
-</[a-zA-Z]+(?![^\s/>])${handle_rawtext_end}
-`,
-	rcdata: STATE`
-&([a-zA-Z0-9]+|#[xX][0-9a-fA-F]+|#[0-9]+);?${{token:'charref'}}
-</[a-zA-Z]+(?![^\s/>])${handle_rawtext_end}
-`,
+	after_label: STATE`
+\s*:${{state:'data'}}
+`
 })
-
-let old_tokens=[], old_text=""
-function render(t, out) {
-	let [tokens, t1, t2, nlen, ind] = htmlp.parse(t, old_text, old_tokens)
-	let pp = performance.now()
-	old_tokens = tokens
-	old_text = t
-	let elem1 = out.childNodes[t1+1]
-	let elem2 = t2==null ? null : out.childNodes[t2]
-	$status.textContent = (t1+1)+".."+(t2==null ? "end" : t2-1)
-	let prev
-	// todo: delete nodes with this?
-	//let range = document.createRange()
-	//range.setStart(out, nlen)
-	//range.setEndBefore(out, t2)
-	for (let i=t1+1; i<nlen; i++) {
-		let changed
-		if (elem1==elem2) {
-			elem1 = document.createElement('span')
-			out.insertBefore(elem1, elem2)
-			changed = true
-		}
-		let text = t.substr(ind, tokens[i].len)
-		if (elem1.textContent != text) {
-			elem1.textContent = text
-			changed = true
-		}
-		if (elem1.className != tokens[i].type) {
-			elem1.className = tokens[i].type||""
-			changed = true
-		}
-//		if (changed)
-		//	elem1.dataset.anim = elem1.dataset.anim=='false'
-		elem1 = elem1.nextSibling
-		ind += tokens[i].len
-	}
-	while (elem1!=elem2) {
-		let prev = elem1
-		elem1 = elem1.nextSibling
-		prev.remove()
-	}
-	return pp
-}
