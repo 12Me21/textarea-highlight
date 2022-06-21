@@ -187,7 +187,7 @@ function handle_rawtext_end(match) {
 // todo: function to determine new state
 // "default" highlight for skipped chars (i.e. within rawtext states)
 
-let htmlp = new Parser({
+let parse_html = new Parser({
 	data: STATE`
 &([a-zA-Z0-9]+|#[xX][0-9a-fA-F]+|#[0-9]+);?${{token:'charref'}}
 <(?=/?[a-zA-Z])${{token:'tag', state:'tag'}}
@@ -226,9 +226,10 @@ let htmlp = new Parser({
 `,
 })
 
+let parser
 let old_tokens=[], old_text=""
 function render(t, out) {
-	let [tokens, t1, t2, nlen, ind] = htmlp.parse(t, old_text, old_tokens)
+	let [tokens, t1, t2, nlen, ind] = parser.parse(t, old_text, old_tokens)
 	let pp = performance.now()
 	old_tokens = tokens
 	old_text = t
@@ -270,7 +271,7 @@ function render(t, out) {
 }
 
 
-htmlp = new Parser({
+let parse_js = new Parser({
 	data: STATE`
 (break|catch|class|continue|default|do|else|finally|for|function|if|switch|try|while|with|case|return|throw|yield|yield|=>)(?![\w$])${{token:'flow'}}
 (typeof|await|delete|void|in|instanceof|new)(?![\w$])${{token:'operator'}}

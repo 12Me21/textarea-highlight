@@ -9,7 +9,6 @@ scroll-outer {
 	max-width: -moz-available;
 	max-width: stretch;
 	width: 700px;
-	height: 500px;
 	border: 10px solid black;
 	background: black;
 }
@@ -53,9 +52,6 @@ textarea-container > .textarea {
 	background: transparent;
 	color: transparent;
 	caret-color: white;
-	outline: 1px solid maroon;
-		outline: ;
-	outline-offset: -1px;
 }
 textarea-overlay {
 	pointer-events: none;

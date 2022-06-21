@@ -1,23 +1,44 @@
 <!doctype html><meta charset=utf-8>
-<meta name=viewport content="width=device-width, initial-scale=1, height=device-height">
+<meta name=viewport content="width=device-width, height=device-height, initial-scale=1">
+<title>Editor with syntax highlighting</title>
 
 <link rel=stylesheet href=style.css>
+<link rel=stylesheet href=common.css>
+
 <script src=hl-live.js></script>
 
-<scroll-outer>
+<body class='Col'>
+<select id=$lang style="align-self:start">
+	<option> html
+	<option> javascript
+</select>
+<scroll-outer class='limit'>
 	<textarea-container id=$c>
 		<textarea-overlay id=$o></textarea-overlay>
-		<textarea class='textarea' id=$i spellcheck=false>TEST&lt;div>HECK</textarea>
+		<textarea class='textarea' id=$i spellcheck=false><span>test</span></textarea>
 	</textarea-container>
 </scroll-outer>
 
-replaced nodes: <span id=$status></span><br>
-gray: keydown &rarr; input delay<br>
-green: parsing<br>
-orange: rendering<br>
-purple: layout<br>
-10ms divisions
-<canvas height=200 width=500 id=$canvas></canvas>
+<div class='Row'>
+	<div class='Col'>
+		replaced nodes: <span id=$status></span><br>
+		<table>
+			<tr>
+				<th> color <th> time
+			<tr>
+				<th style="background:gray"> gray <td> input delay
+			<tr>
+				<th style="background:lime"> lime <td> parsing
+			<tr>
+				<th style="background:#F60"> orange <td> rendering
+			<tr>
+				<th style="background:purple"> purple <td> layout
+		</table>
+		10ms divisions
+	</div>
+	<canvas height=200 width=500 id=$canvas style='width:max-content'></canvas>
+</div>
+</body>
 
 <script>
 	let c2d = $canvas.getContext('2d')
@@ -63,12 +84,15 @@ purple: layout<br>
 		$i.style.height = "100%"
 	}
 	
-	fetch(location).then(x=>x.text()).then(x=>{
-		$i.value = x
+	let parsers = {html: parse_html, javascript: parse_js}
+	$lang.onchange = e=>{
+		parser = parsers[$lang.value]
+		$o.textContent = ""
+		old_tokens=[]
+		old_text=""
 		update()
-	})
-	
-	update()
+	}
+	$lang.onchange()
 	
 	let kdt
 	$i.addEventListener('keydown', e=>{
@@ -78,8 +102,6 @@ purple: layout<br>
 	let lock = false
 	$i.addEventListener('input', e=>{
 		let tk = kdt
-		//let ta = performance.now()
-		//resize()
 		let t0 = performance.now()
 		let tp = update()
 		let t1 = performance.now()
@@ -87,6 +109,12 @@ purple: layout<br>
 		let t2 = performance.now()
 		graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2], ['gray', tk])
 	}, {passive: true})
+	
+	fetch(location).then(x=>x.text()).then(x=>{
+		$i.value = x
+		update()
+	})
+	
+	update()
+	
 </script>
-
-<pre>test</pre>
