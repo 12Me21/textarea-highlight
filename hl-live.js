@@ -12,7 +12,7 @@ function first_difference(str1, str2, tokens) {
 	let i
 	let ti = 0
 	let ind = 0
-	let offset = 1 // account for regex lookahead..
+	let offset = 9 // account for regex lookahead..
 	for (i=-offset; i<str1.length; i++) {
 		if (str1[i+offset] !== str2[i+offset])
 			break
@@ -200,6 +200,7 @@ let parse_html = new Parser({
 (--!?>|$)${{token:'comment', state:'data'}}
 `,
 	tag: STATE`
+script(?![^\s/>])${{token:'name', state: 'in_script_tag'}}
 [a-zA-Z][^\s/>]*${handle_tag_start}
 /[a-zA-Z][^\s/>]*${{token:'name', state:'in_tag'}}
 `,	
@@ -217,6 +218,22 @@ let parse_html = new Parser({
 '[^']*'?${{token:'value', state:'in_tag'}}
 [^\s>]*${{token:'value', state:'in_tag'}}
 `,
+	
+	in_script_tag: STATE`
+[\s/]*(>${{token:'tag', state: 'js'}}
+=[^\s/>=]*${{token:'key', state:'after_script_key'}}
+[^\s/>=]+${{token:'key', state:'after_script_key'}})
+`,
+	after_script_key: STATE`
+\s*=\s*${{state:'script_value'}}
+(?:)${{state:'in_script_tag'}}
+`,
+	script_value: STATE`
+"[^"]*"?${{token:'value', state:'in_script_tag'}}
+'[^']*'?${{token:'value', state:'in_script_tag'}}
+[^\s>]*${{token:'value', state:'in_script_tag'}}
+`,
+	
 	rawtext: STATE`
 </[a-zA-Z]+(?![^\s/>])${handle_rawtext_end}
 `,
@@ -224,9 +241,81 @@ let parse_html = new Parser({
 &([a-zA-Z0-9]+|#[xX][0-9a-fA-F]+|#[0-9]+);?${{token:'charref'}}
 </[a-zA-Z]+(?![^\s/>])${handle_rawtext_end}
 `,
+	
+	js: STATE`
+(?=</script)${{state:'data'}}
+(break|catch|class|continue|default|do|else|finally|for|function|if|switch|try|while|with|case|return|throw|yield|yield|=>)(?![\w$])${{token:'flow'}}
+(typeof|await|delete|void|in|instanceof|new)(?![\w$])${{token:'operator'}}
+[?]?[.]\s*${{state:'js_property'}}
+([+-]{2}|[!=]==?|[!~])${{token:'operator'}}
+=${{token:'assignment'}}
+([-*%+&^|]|[*<>&|?]{2}|>>>)(=${{token:'assignment'}})?${{token:'operator'}}
+([?]|:|[<>]=?)${{token:'operator'}}
+(super|this)(?![\w$])${{token:'keyword', state:'js_after_value'}}
+(const|debugger|export|import|var|enum|implements|interface|let|package|private|protected|public|static|extends)(?![\w$])${{token:'keyword'}}
+(?!\d)[\w$]+(?=\s*:)${{token:'property', state:'js_after_label'}}
+(?!\d)[\w$]+${{token:'word', state:'js_after_value'}}
+"${{token:'string', state:'js_string1'}}
+'${{token:'string', state:'js_string2'}}
+\`${{token:'string', state:'js_string3'}}
+//${{token:'comment',state:'js_comment'}}
+/[*]${{token:'comment',state:'js_block_comment'}}
+/${{token:'string', state:'js_regex'}}
+<!--${{token:'comment',state:'js_comment'}}
+(0[xXbBoO]|[.])?[\dA-Fa-f]+(_?[\dA-Fa-f]+)*${{token:'constant', state:'js_after_value'}}
+\n${{}}
+;${{token:'semicolon'}}
+`,
+	js_regex: STATE`
+(?=</script)${{state:'data'}}
+\n${{state:'js'}}
+\\[/\\]${{}}
+/[idgmuy]*${{token:'string',state:'js_after_value'}}
+`,
+	js_string1: STATE`
+(?=</script)${{state:'data'}}
+\n${{state:'js'}}
+\\["\\\n]${{}}
+"${{token:'string',state:'js_after_value'}}
+`,
+	js_string2: STATE`
+(?=</script)${{state:'data'}}
+\n${{state:'js'}}
+\\['\\\n]${{}}
+'${{token:'string',state:'js_after_value'}}
+`,
+	js_string3: STATE`
+(?=</script)${{state:'data'}}
+\\[\`\\]${{}}
+\`${{token:'string',state:'js_after_value'}}
+`,
+	js_comment: STATE`
+(?=</script)${{state:'data'}}
+\n${{token:'comment', state:'js'}}
+`,
+	js_block_comment: STATE`
+(?=</script)${{state:'data'}}
+[*]/${{token:'comment', state:'js'}}
+`,
+	js_after_value: STATE`
+(?=</script)${{state:'data'}}
+/=${{token:'assignment'}}
+/${{token:'operator'}}
+[+-]{2}${{token:'operator'}}
+${{state:'js'}}
+`,
+	js_property: STATE`
+(?=</script)${{state:'data'}}
+(?!\d)[\w$]+${{token:'property', state:'js'}}
+${{state:'js'}}
+`,
+	js_after_label: STATE`
+(?=</script)${{state:'data'}}
+\s*:${{state:'js'}}
+`
 })
 
-let parser
+let parser = parse_html
 let old_tokens=[], old_text=""
 function render(t, out) {
 	let [tokens, t1, t2, nlen, ind] = parser.parse(t, old_text, old_tokens)
@@ -269,43 +358,3 @@ function render(t, out) {
 	}
 	return pp
 }
-
-
-let parse_js = new Parser({
-	data: STATE`
-(break|catch|class|continue|default|do|else|finally|for|function|if|switch|try|while|with|case|return|throw|yield|yield|=>)(?![\w$])${{token:'flow'}}
-(typeof|await|delete|void|in|instanceof|new)(?![\w$])${{token:'operator'}}
-[?]?[.]\s*${{state:'property'}}
-([+-]{2}|[!=]==?|[!~])${{token:'operator'}}
-=${{token:'assignment'}}
-([-*%+&^|]|[*<>&|?]{2}|>>>)(=${{token:'assignment'}})?${{token:'operator'}}
-([?]|:|[<>]=?)${{token:'operator'}}
-(super|this)(?![\w$])${{token:'keyword', state:'after_value'}}
-(const|debugger|export|import|var|enum|implements|interface|let|package|private|protected|public|static|extends)(?![\w$])${{token:'keyword'}}
-(?!\d)[\w$]+(?=\s*:)${{token:'property', state:'after_label'}}
-(?!\d)[\w$]+${{token:'word', state:'after_value'}}
-/(?![*/])([^/\n\\]+|\\.)*?(/[idgmuy]*|\n|$)${{token:'string', state:'after_value'}}
-"([^\n\\"]+|\\[^])*?("|\n|$)${{token:'string', state:'after_value'}}
-'([^\n\\']+|\\[^])*?('|\n|$)${{token:'string', state:'after_value'}}
-\`([^\\\`]+|\\[^])*?(\`|$)${{token:'string', state:'after_value'}}
-//.*${{token:'comment'}}
-/[*][^]*?([*]/|$)${{token:'comment'}}
-<!--.*${{token:'comment'}}
-(0[xXbBoO]|[.])?[\dA-Fa-f]+(_?[\dA-Fa-f]+)*${{token:'constant', state:'after_value'}}
-\n${{}}
-;${{token:'semicolon'}}
-`,
-	after_value: STATE`
-/=${{token:'assignment'}}
-/${{token:'operator'}}
-[+-]{2}${{token:'operator'}}
-${{state:'data'}}
-`,
-	property: STATE`
-(?!\d)[\w$]+${{token:'property', state:'data'}}
-${{state:'data'}}
-`,
-	after_label: STATE`
-\s*:${{state:'data'}}
-`
-})

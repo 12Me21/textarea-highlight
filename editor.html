@@ -8,10 +8,6 @@
 <script src=hl-live.js></script>
 
 <body class='Col'>
-<select id=$lang style="align-self:start">
-	<option> html
-	<option> javascript
-</select>
 <scroll-outer class='limit'>
 	<textarea-container id=$c>
 		<textarea-overlay id=$o></textarea-overlay>
@@ -83,16 +79,6 @@
 		$i.parentNode.style.height = `${$i.scrollHeight+1}px`
 		$i.style.height = "100%"
 	}
-	
-	let parsers = {html: parse_html, javascript: parse_js}
-	$lang.onchange = e=>{
-		parser = parsers[$lang.value]
-		$o.textContent = ""
-		old_tokens=[]
-		old_text=""
-		update()
-	}
-	$lang.onchange()
 	
 	let kdt
 	$i.addEventListener('keydown', e=>{
