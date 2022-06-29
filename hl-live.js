@@ -310,7 +310,6 @@ ${{state:'js'}}
 ${{state:'js'}}
 `,
 	js_after_label: STATE`
-(?=</script)${{state:'data'}}
 \s*:${{state:'js'}}
 `
 })
