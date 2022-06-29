@@ -1,223 +1,106 @@
-<!doctype html><html lang=en-QS><meta charset=utf-8>
-<meta name=viewport content="width=device-width, initial-scale=1, height=device-height">
-<title>Highlighter Demo</title>
+<!doctype html><meta charset=utf-8>
+<meta name=viewport content="width=device-width, height=device-height, initial-scale=1">
+<title>Editor with syntax highlighting</title>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+<link rel=stylesheet href=style.css>
+<link rel=stylesheet href=common.css>
 
-<script src=hl2.js></script>
-<script src=acorn.js></script>
+<script src=hl-live.js></script>
 
-<link rel=stylesheet href=markup.css>
-<style>
-	html { word-break: break-word; }
-	
-	html, body {
-		position:fixed; top:0;left:0;right:0;bottom:0;
-		background: var(--T-bg, white);
-	}
-	
-	html, select { font: var(--T-font); }
-	
-	table.times, table.times td, table.times th {
-		border: 1px solid currentColor;
-		border-spacing: 0;
-	}
-	table.times td, table.times th {
-		padding: 2px 5px;
-		word-break: normal; overflow-wrap: break-word;
-	}
-	table.times th {
-		font-weight: bold;
-		color: white;
-		background: black;
-	}
-	table-overflow {
-		overflow-x: auto;
-	}
-	
-	#\$output {
-		border: 3px solid black;
-		padding: 2px;
-		overflow-y: auto;
-		background: black;
-		color: white;
-		font-family: monospace, monospace;
-	}
-	
-	/*:is(span[class]) { color: red; }*/
-	span.word {
-		color: #DEF;
-	}
-	span.comment {
-		color: #a1f198;
-		font-style: italic;
-	}
-	span.string { color: #9C9; }
-	span.operator { color: #BB7; }
-	span.keyword { color: #2494f0; }
-	span.constant { color: #f359ab; }
-	span.property { color: #D9B; }
-	span.flow { color: #2494f0;font-weight: bold; }
-	span.semicolon { color: #CF0; }
-	span.assignment { color: goldenrod; }
-	
-	
-	body {
-		display: flex; /*  grid. rowheights: min-content auto, colwidths: 1fr 1fr on mobile, uh stack them liiike.. just do a normal block scrolling layout (should textarea/output ever scroll?) or maybe display one at a time? just have an options dropdown?*/
-	}
-	body > * {
-		width: 50%;
-	}
-	.Col { display: flex; flex-direction: column; }
-	.Col > * { flex-shrink: 0; }
-	.Col > .limit { flex-shrink: 1; min-height: 0; }
-</style>
-
-<input-pane class='Col'>
-	<select id=$lang>
-		<option> javascript
-		<option> html
-		<option> css
-		<option> none
-	</select>
-	
-	<textarea-container class='limit'>
-		<textarea id=$input></textarea>
+<body class='Col'>
+<scroll-outer class='limit'>
+	<textarea-container id=$c>
+		<textarea-overlay id=$o></textarea-overlay>
+		<textarea class='textarea' id=$i spellcheck=false><span>test</span></textarea>
 	</textarea-container>
-</input-pane>
+</scroll-outer>
 
-<output-pane class='Col'>
-	<table-overflow><table class=times>
-		<tr>
-			<th> <th> parse <th> render <th> layout <th> total
-		<tr>
-			<th> time (ms)
-			<td> <time id=$time1 datetime=Z></time>
-			<td> <time id=$time2 datetime=Z></time>
-			<td> <time id=$time3 datetime=Z></time>
-			<td> <time id=$time4 datetime=Z></time>
-	</table></table-overflow>
-	<span id=$count></span>
-	<pre id=$output class='Markup limit'></pre>
-</output-pane>
-	
+<div class='Row'>
+	<div class='Col'>
+		replaced nodes: <span id=$status></span><br>
+		<table>
+			<tr>
+				<th> color <th> time
+			<tr>
+				<th style="background:gray"> gray <td> input delay
+			<tr>
+				<th style="background:lime"> lime <td> parsing
+			<tr>
+				<th style="background:#F60"> orange <td> rendering
+			<tr>
+				<th style="background:purple"> purple <td> layout
+		</table>
+		10ms divisions
+	</div>
+	<canvas height=200 width=500 id=$canvas style='width:max-content'></canvas>
+</div>
+</body>
+
 <script>
-	let batch = (cb,w=0)=>e=>w++||requestAnimationFrame(_=>cb(e,w=0))
-	
-	function show_time(elem, ms) {
-		elem.dateTime = (ms/1000).toFixed(4)+' s'
-		elem.textContent = ms.toFixed(1)
+	let c2d = $canvas.getContext('2d')
+	let cx
+	let center = 100
+	function reset_graph() {
+		c2d.clearRect(10,0,500,200)
+		c2d.fillStyle = 'black'
+		c2d.fillRect(0,0,1,200)
+		c2d.fillRect(0,100,9,1)
+		for (let i=0; i<=50; i+=10) {
+			c2d.fillRect(0,center - i*2 - 0.5,500,1)
+			c2d.fillRect(0,center+1 + i*2 - 0.5,500,1)
+		}
+		cx=10
 	}
-	
-	let types = {
-		"++/--": "operator",
-		"+/-": "operator",
-		"...": "operator",
-		"</>/<=/>=": "operator",
-		"=": "operator",
-		"==/!=/===/!==": "operator",
-		typeof: "operator",
-		new: "operator",
-		
-		class: "keyword",
-		else: "keyword",
-		function: "keyword",
-		if: "keyword",
-		return: "keyword",
-		while: "keyword",
-		throw: "keyword",
-		
-		string: "string",
-		template: "string",
-		regexp: "string",
-		
-		this: "constant",
-		num: "constant",
-		
-		name: "variable",
+	reset_graph()
+	//c2d.fillRect(0,center,9,1)
+	function graph_time(t0, after, before) {
+		cx++
+		if (cx>=500)
+			reset_graph()
+		c2d.fillStyle = 'white'
+		c2d.fillRect(cx,center,1,1)
+		for (let i=after.length-1; i>=1; i-=2) {
+			let t = after[i]
+			c2d.fillStyle = after[i-1]
+			c2d.fillRect(cx,center,1,-(t-t0)*2)
+		}
+		for (let i=before.length-1; i>=1; i-=2) {
+			let t = before[i]
+			c2d.fillStyle = before[i-1]
+			c2d.fillRect(cx,center+1,1,-(t-t0)*2)
+		}
 	}
 	
 	function update() {
-		//Markup.convert_lang($input.value, $lang.value, $output)
+		return render($i.value, $o)
+	}
+	function resize() {
+		$i.style.height = "0"
+		$i.parentNode.style.height = `${$i.scrollHeight+1}px`
+		$i.style.height = "100%"
+	}
+	
+	let kdt
+	$i.addEventListener('keydown', e=>{
+		kdt = performance.now()
+	}, {passive:true})
+	
+	let lock = false
+	$i.addEventListener('input', e=>{
+		let tk = kdt
 		let t0 = performance.now()
-		/*let i = $input.value
-		let o = $output
-		let n = acorn.tokenizer(i)
-		o.textContent = ""
-		let prev = 0
-		for (let t of n) {
-			if (t.start > prev) {
-				o.append(i.substring(prev, t.start))
-			}
-			let s = document.createElement('span')
-			let y = types[t.type.label]
-			if (y)
-				s.className = y
-			s.textContent = i.substring(t.start, t.end)
-			prev = t.end
-			o.appendChild(s)
-		}*/
-		parse_js.parse($input.value, $output)
+		let tp = update()
 		let t1 = performance.now()
-		$output.scrollHeight
+		$o.scrollHeight
 		let t2 = performance.now()
-		show_time($time1, t1-t0)
-		show_time($time2, t2-t1)
-		show_time($time4, t2-t0)
-	}
+		graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2], ['gray', tk])
+	}, {passive: true})
 	
-	$input.addEventListener('input', batch(update), {passive:true})
+	fetch(location).then(x=>x.text()).then(x=>{
+		$i.value = x
+		update()
+	})
 	
-	//$input.oninput = update
-	$lang.onchange = update
 	update()
-</script>
-
-
-<!-- textarea -->
-
-<style>
-	textarea-container, textarea-container > textarea {
-		display: block;
-		box-sizing: content-box;
-		min-height: 5em;
-		height: 0;
-		font: 1em monospace;
-	}
 	
-	textarea-container {
-		padding: 2px;
-		border: 2px solid #00C8B4;
-		border-radius: 2px;
-	}
-	
-	textarea-container > textarea {
-		resize: none;
-		overflow-y: scroll;
-		margin: 0;
-		border: none;
-		padding: 0;
-		width: 100%;
-		
-		appearance: none;
-		outline-offset: 2px;
-	}
-</style>
-
-<script>
-	{
-		let resize = (t)=>{
-			t.style.height = "0"
-			t.parentNode.style.height = `${t.scrollHeight+1}px`
-			t.style.height = "100%"
-		}
-		document.addEventListener('input', function(e) {
-			let t = e.target
-			if (t instanceof HTMLTextAreaElement && t.parentNode.tagName=='TEXTAREA-CONTAINER')
-				resize(t)
-		}, {passive: true})
-		for (let t of document.querySelectorAll("textarea-container > textarea"))
-			resize(t)
-	}
 </script>
