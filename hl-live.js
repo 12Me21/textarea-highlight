@@ -1,3 +1,5 @@
+"use strict"
+
 function first_difference(str1, str2, tokens) {
 	let i
 	let ti = 0
@@ -242,8 +244,8 @@ function render(t, out) {
 	old_text = t
 	let elem1 = out.childNodes[t1+1]
 	let elem2 = t2==null ? null : out.childNodes[t2]
-	$status.textContent = (t1+1)+".."+(t2==null ? "end" : t2-1)
 	let prev
+	let nchanged = 0
 	// todo: delete nodes with this?
 	//let range = document.createRange()
 	//range.setStart(out, nlen)
@@ -264,6 +266,8 @@ function render(t, out) {
 			elem1.className = tokens[i].type||""
 			changed = true
 		}
+		if (changed)
+			nchanged++
 //		if (changed)
 		//	elem1.dataset.anim = elem1.dataset.anim=='false'
 		elem1 = elem1.nextSibling
@@ -273,6 +277,8 @@ function render(t, out) {
 		let prev = elem1
 		elem1 = elem1.nextSibling
 		prev.remove()
+		nchanged++
 	}
+	$status.textContent = nchanged
 	return pp
 }

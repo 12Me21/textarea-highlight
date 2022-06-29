@@ -26,6 +26,7 @@ textarea-container > * {
 	padding: 0;
 	border: none;
 	overflow: hidden;
+	overflow: clip;
 	width: 100%;
 	
 	white-space: pre-wrap;
@@ -52,11 +53,14 @@ textarea-container > .textarea {
 	background: transparent;
 	color: transparent;
 	caret-color: white;
+	contain: strict;
 }
 textarea-overlay {
 	pointer-events: none;
 	background: black;
 	color: white;
+	will-change: contents;
+	contain: paint;
 }
 /* necessary to avoid hiding last linebreak */
 textarea-overlay::after {
@@ -77,42 +81,18 @@ textarea-overlay::after {
 .new {text-decoration: underline;}
 .suffix {color: blue;}
 
-@keyframes new {
-	/*from { background: yellow; }*/
-	from { -webkit-text-stroke-width: 2px; }
-	to { -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: transparent; }
+span.word {
+	color: #DEF;
 }
-@keyframes new1 {
-	from { -webkit-text-stroke-width: 2px; }
-	to { -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: transparent; }
+span.comment {
+	color: #a1f198;
+	font-style: italic;
 }
-@keyframes new2 {
-	from { -webkit-text-stroke-width: 2px; }
-	to { -webkit-text-stroke-width: 2px; -webkit-text-stroke-color: transparent; }
-}
-textarea-overlay > span[data-anim="true"] {
-	animation: new1 1s;
-}
-textarea-overlay > span[data-anim="false"] {
-	animation: new2 1s;
-}
-textarea-overlay > span[data-anim="new"] {
-	animation: new 1s;
-}
-/*🯅🯆🯇🯈🯉*/
-
-	span.word {
-		color: #DEF;
-	}
-	span.comment {
-		color: #a1f198;
-		font-style: italic;
-	}
-	span.string { color: #9C9; }
-	span.operator { color: #BB7; }
-	span.keyword { color: #2494f0; }
-	span.constant { color: #f359ab; }
-	span.property { color: #D9B; }
-	span.flow { color: #2494f0; }
-	span.semicolon { color: #CF0; }
-	span.assignment { color: goldenrod; }
+span.string { color: #9C9; }
+span.operator { color: #BB7; }
+span.keyword { color: #2494f0; }
+span.constant { color: #f359ab; }
+span.property { color: #D9B; }
+span.flow { color: #2494f0; }
+span.semicolon { color: #CF0; }
+span.assignment { color: goldenrod; }

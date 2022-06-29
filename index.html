@@ -36,7 +36,12 @@
 </div>
 
 <script>
-	let c2d = $canvas.getContext('2d')
+	let input = $i
+	let output = $o
+	let canvas = $canvas
+	
+	"use strict"
+	let c2d = canvas.getContext('2d')
 	let cx
 	let center = 100
 	function reset_graph() {
@@ -71,32 +76,32 @@
 	}
 	
 	function update() {
-		return render($i.value, $o)
-	}
-	function resize() {
-		$i.style.height = "0"
-		$i.parentNode.style.height = `${$i.scrollHeight+1}px`
-		$i.style.height = "100%"
+		return render(input.value, output)
 	}
 	
 	let kdt
-	$i.addEventListener('keydown', e=>{
+	input.addEventListener('keydown', e=>{
 		kdt = performance.now()
 	}, {passive:true})
 	
 	let lock = false
-	$i.addEventListener('input', e=>{
+	input.addEventListener('input', e=>{
 		let tk = kdt
-		let t0 = performance.now()
-		let tp = update()
-		let t1 = performance.now()
-		$o.scrollHeight
-		let t2 = performance.now()
-		graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2], ['gray', tk])
+		if (lock) return
+		lock = true
+		requestAnimationFrame(()=>{
+			lock = false
+			let t0 = performance.now()
+			let tp = update()
+			let t1 = performance.now()
+			void output.scrollHeight
+			let t2 = performance.now()
+			graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2], ['gray', tk])
+		})
 	}, {passive: true})
 	
 	fetch(location).then(x=>x.text()).then(x=>{
-		$i.value = x
+		input.value = x
 		update()
 	})
 	
