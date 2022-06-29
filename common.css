@@ -7,11 +7,7 @@ html {
 html, body {
 	position: fixed;
 	top:0; left:0; right:0; bottom:0;
-	background: var(--T-bg, white);
-}
-
-html, select {
-	font: var(--T-font);
+	background: white;
 }
 
 .Row, .Col {
@@ -48,12 +44,5 @@ html, select {
 	}
 	.Split > * {
 		width: unset;
-	}
-}
-
-/* ios safari... */
-@supports (-webkit-touch-callout: none) {
-	textarea, input, select {
-		font-size: 16px !important;
 	}
 }
