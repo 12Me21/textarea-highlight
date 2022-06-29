@@ -89,7 +89,7 @@
 		let tk = kdt
 		if (lock) return
 		lock = true
-		requestAnimationFrame(()=>{
+		//requestAnimationFrame(()=>{
 			lock = false
 			let t0 = performance.now()
 			let tp = update()
@@ -97,7 +97,7 @@
 			void output.scrollHeight
 			let t2 = performance.now()
 			graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2], ['gray', tk])
-		})
+		//})
 	}, {passive: true})
 	
 	fetch(location).then(x=>x.text()).then(x=>{

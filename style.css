@@ -33,7 +33,7 @@ textarea-container > * {
 	word-break: break-word;
 	line-break: anywhere;
 	
-	font-family: Cascadia Code, Fira Code, consolas, monospace, monospace;
+	font-family: Cascadia Mono, Cascadia Code, Fira Code, consolas, monospace, monospace;
 	font-size: 1rem;
 	line-height: normal;
 	font-kerning: none;
