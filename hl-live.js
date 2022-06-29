@@ -1,13 +1,3 @@
-function print(token) {
-	if (token.type)
-		return `${token.start}..${token.end} - ${token.state} : ${token.type}`
-	return `${token.start}..${token.end} - ${token.state}`
-}
-
-function prints(tokens) {
-	console.log(tokens.map(print).join("\n"))
-}
-
 function first_difference(str1, str2, tokens) {
 	let i
 	let ti = 0
@@ -121,69 +111,6 @@ function STATE({raw}, ...values) {
 	return {regex, groups: values}
 }
 
-/*
-
-attrs:
-
-before name:
-[\s/]*>  - data
-[\s/]*=?[^\s/>]+  - after name
-
-after name:
-\s*=\s*  - value
-(?:)  - before name
-
-value:
-"[^"]*("|$)  - before name
-'[^']*('|$)  - before name
-[^\s>]*  - before name
-> data
-
-*/
-
-/* the state of the HTML parser's tokenization stage as follows, switching on the context element:
-
-title
-textarea
-    Switch the tokenizer to the RCDATA state.
-style
-xmp
-iframe
-noembed
-noframes
-    Switch the tokenizer to the RAWTEXT state.
-script
-    Switch the tokenizer to the script data state.
-noscript
-    If the scripting flag is enabled, switch the tokenizer to the RAWTEXT state. Otherwise, leave the tokenizer in the data state.
-plaintext
-*/
-
-let current_tag
-function handle_tag_start(match) {
-	current_tag = 'a'//match.toLowerCase()
-	return {token:'name', state:'in_tag'}
-}
-function handle_tag_end(match) {
-	let tag = current_tag
-	// RAWTEXT
-	if (tag=='style' || tag=='xmp' || tag=='iframe' || tag=='noembed' || tag=='noframes' || tag=='script' || tag=='noscript')
-		return {token:'tag', state:'rawtext'}
-	// script data (close enough to RAWTEXT)
-	if (tag=='script')
-		return {token:'tag', state:'rawtext'}
-	// RCDATA
-	if (tag=='title' || tag=='textarea')
-		return {token:'tag', state:'rcdata'}
-	current_tag = null
-	return {token:'tag', state:'data'}
-}
-function handle_rawtext_end(match) {
-	if (match.toLowerCase() != "</"+current_tag)
-		return {state:'rawtext'}
-	current_tag = null
-	return {token:'tag', state:'in_tag'}
-}
 // todo: function to determine new state
 // "default" highlight for skipped chars (i.e. within rawtext states)
 
@@ -201,11 +128,11 @@ let parse_html = new Parser({
 `,
 	tag: STATE`
 script(?![^\s/>])${{token:'name', state: 'in_script_tag'}}
-[a-zA-Z][^\s/>]*${handle_tag_start}
+[a-zA-Z][^\s/>]*${{token:'name', state:'in_tag'}}
 /[a-zA-Z][^\s/>]*${{token:'name', state:'in_tag'}}
 `,	
 	in_tag: STATE`
-[\s/]*(>${handle_tag_end}
+[\s/]*(>${{token:'tag', state:'data'}}
 =[^\s/>=]*${{token:'key', state:'after_key'}}
 [^\s/>=]+${{token:'key', state:'after_key'}})
 `,
@@ -232,14 +159,6 @@ script(?![^\s/>])${{token:'name', state: 'in_script_tag'}}
 "[^"]*"?${{token:'value', state:'in_script_tag'}}
 '[^']*'?${{token:'value', state:'in_script_tag'}}
 [^\s>]*${{token:'value', state:'in_script_tag'}}
-`,
-	
-	rawtext: STATE`
-</[a-zA-Z]+(?![^\s/>])${handle_rawtext_end}
-`,
-	rcdata: STATE`
-&([a-zA-Z0-9]+|#[xX][0-9a-fA-F]+|#[0-9]+);?${{token:'charref'}}
-</[a-zA-Z]+(?![^\s/>])${handle_rawtext_end}
 `,
 	
 	js: STATE`
