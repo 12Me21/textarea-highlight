@@ -2,7 +2,7 @@
 	-webkit-text-size-adjust: none !important;
 }
 
-scroll-outer {
+textarea-container {
 	display: block;
 	overflow-y: scroll;
 	max-width: -webkit-fill-available;
@@ -12,22 +12,20 @@ scroll-outer {
 	border: 10px solid black;
 	background: black;
 }
-
-textarea-container {
+textarea-container:focus-within {
+	outline-style: auto;
+}
+textarea-container > div {
 	display: block;
 	position: relative;
 	background: black;
 	contain: content;
 }
-textarea-container > * {
+textarea-container > div > * {
 	all: initial;
 	
 	display: block;
-	margin: 0;
-	padding: 0;
-	border: none;
-	overflow: hidden;
-	overflow: clip;
+	overflow: hidden;	overflow: clip;
 	width: 100%;
 	
 	white-space: pre-wrap;
@@ -40,16 +38,13 @@ textarea-container > * {
 	font-kerning: none;
 	font-variant-ligatures: none;
 	tab-size: 3; -moz-tab-size: 3;
-	-webkit-text-size-adjust: none;
 }
-textarea-container > textarea {
-	height: 100%;
-	resize: none;
-}
-textarea-container > .textarea {
+textarea-container > div > textarea {
 	position: absolute;
 	top: 0;
 	z-index: 1;
+	resize: none;
+	height: 100%;
 	overflow: hidden;
 	
 	background: transparent;
@@ -57,7 +52,7 @@ textarea-container > .textarea {
 	caret-color: white;
 	contain: strict;
 }
-textarea-overlay {
+textarea-container > div > textarea-overlay {
 	pointer-events: none;
 	background: black;
 	color: white;
@@ -65,9 +60,10 @@ textarea-overlay {
 	contain: content;
 }
 /* necessary to avoid hiding last linebreak */
-textarea-overlay::after {
+textarea-container > div > textarea-overlay::after {
 	content: "\A";
 }
+
 .name { color: cyan; }
 .comment { color: #0C0; }
 .commenttext { color: lime; }

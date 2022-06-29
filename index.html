@@ -8,13 +8,12 @@
 <script src=hl-live.js></script>
 
 <body class='Col'>
-<scroll-outer class='limit'>
-	<textarea-container id=$c>
+<textarea-container class='limit' tabindex=-1>
+	<div id=$c tabindex=-1>
 		<textarea-overlay id=$o></textarea-overlay>
-		<textarea class='textarea' id=$i spellcheck=false><span>test</span></textarea>
-	</textarea-container>
-</scroll-outer>
-
+		<textarea id=$i spellcheck=false><span>test</span></textarea>
+	</div>
+</textarea-container>
 <div class='Row'>
 	<div class='Col'>
 		replaced nodes: <span id=$status></span><br>
@@ -70,8 +69,10 @@
 		}
 		for (let i=before.length-1; i>=1; i-=2) {
 			let t = before[i]
-			c2d.fillStyle = before[i-1]
-			c2d.fillRect(cx,center+1,1,-(t-t0)*2)
+			if (t) {
+				c2d.fillStyle = before[i-1]
+				c2d.fillRect(cx,center+1,1,-(t-t0)*2)
+			}
 		}
 	}
 	
@@ -79,10 +80,44 @@
 		return render(input.value, output)
 	}
 	
+	function get_last_indent(str, end) {
+		let start
+		for (start=end-1; start>=0 && str[start]!="\n"; start--)
+			if (str[start]!=" " && str[start]!="\t")
+				end = start
+		return str.substring(start+1, end)
+	}
+	function capture_tab(input, state) {
+		input.dataset.capture_tab = state ? "yes" : ""
+	}
+	function init(input, cb) {
+		Object.assign(input, {
+			onclick(e) { capture_tab(e.target, true) },
+			onfocus(e) { capture_tab(e.target, false) },
+			onblur(e) { capture_tab(e.target, false) },
+			onkeydown(e) {
+				if ('Tab'==e.key && !e.shiftKey && e.target.dataset.capture_tab) {
+					cb && cb()
+					e.preventDefault()
+					document.execCommand('insertText', false, "\t")
+				}
+			},
+			onbeforeinput(e) {
+				cb && cb()
+				capture_tab(e.target, true)
+				if ('insertLineBreak'==e.inputType) {
+					let indent = get_last_indent(e.target.value, e.target.selectionStart)
+					if (indent) {
+						e.preventDefault()
+						document.execCommand('insertText', false, "\n"+indent)
+					}
+				}
+			}
+		})
+	}
+	
 	let kdt
-	input.addEventListener('keydown', e=>{
-		kdt = performance.now()
-	}, {passive:true})
+	init(input, ()=>{kdt=performance.now()})
 	
 	let lock = false
 	let missed = true
@@ -103,10 +138,13 @@
 		}
 		lock = true
 		a(kdt)
+		kdt = null
 		setTimeout(()=>{
 			lock = false
-			if (missed)
+			if (missed) {
 				a(kdt)
+				kdt = null
+			}
 		})
 	}, {passive: true})
 	
