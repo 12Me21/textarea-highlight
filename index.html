@@ -1,5 +1,5 @@
 <!doctype html><meta charset=utf-8>
-<meta name=viewport content="width=device-width, height=device-height, initial-scale=1" id=$meta_viewport>
+<meta name=viewport content="width=device-width, height=device-height, initial-scale=1">
 <title>Editor with syntax highlighting</title>
 
 <link rel=stylesheet href=style.css>
@@ -8,10 +8,12 @@
 <script src=hl-live.js></script>
 
 <body class='Col'>
-<textarea-container id=$c class='fill'>
-	<textarea-overlay id=$o></textarea-overlay>
-	<textarea class='textarea' id=$i spellcheck=false><span>test</span></textarea>
-</textarea-container>
+<scroll-outer class='limit'>
+	<textarea-container id=$c>
+		<textarea-overlay id=$o></textarea-overlay>
+		<textarea class='textarea' id=$i spellcheck=false><span>test</span></textarea>
+	</textarea-container>
+</scroll-outer>
 
 <div class='Row'>
 	<div class='Col'>
@@ -34,9 +36,6 @@
 </div>
 
 <script>
-	if (CSS.supports('-webkit-touch-callout', 'none'))
-		$meta_viewport.content += ", user-scalable=no"
-	
 	let input = $i
 	let output = $o
 	let canvas = $canvas
@@ -85,24 +84,20 @@
 		kdt = performance.now()
 	}, {passive:true})
 	
-	input.addEventListener('scroll', e=>{
-		output.scrollTop = input.scrollTop
-	})
-	
 	let lock = false
 	input.addEventListener('input', e=>{
 		let tk = kdt
 		if (lock) return
 		lock = true
-		requestAnimationFrame(()=>{
+		//requestAnimationFrame(()=>{
 			lock = false
 			let t0 = performance.now()
 			let tp = update()
 			let t1 = performance.now()
-			output.scrollTop = input.scrollTop
+			void output.scrollHeight
 			let t2 = performance.now()
 			graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2], ['gray', tk])
-		})
+		//})
 	}, {passive: true})
 	
 	fetch(location).then(x=>x.text()).then(x=>{

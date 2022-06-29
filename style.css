@@ -2,13 +2,19 @@
 	-webkit-text-size-adjust: none !important;
 }
 
-textarea-container {
+scroll-outer {
 	display: block;
+	overflow-y: scroll;
 	max-width: -webkit-fill-available;
 	max-width: -moz-available;
 	max-width: stretch;
 	width: 700px;
 	border: 10px solid black;
+	background: black;
+}
+
+textarea-container {
+	display: block;
 	position: relative;
 	background: black;
 }
@@ -19,13 +25,9 @@ textarea-container > * {
 	margin: 0;
 	padding: 0;
 	border: none;
-	overflow-y: scroll;
+	overflow: hidden;
+	overflow: clip;
 	width: 100%;
-	height: 100%;
-	overflow-anchor: none;
-	position: absolute;
-	top: 0;
-	contain: strict;
 	
 	white-space: pre-wrap;
 	word-break: break-word;
@@ -33,31 +35,36 @@ textarea-container > * {
 	
 	font-family: Cascadia Mono, Cascadia Code, Fira Code, consolas, monospace, monospace;
 	font-size: 1rem;
-	line-height: 1.25rem;
+	line-height: normal;
 	font-kerning: none;
 	font-variant-ligatures: none;
 	tab-size: 3; -moz-tab-size: 3;
 	-webkit-text-size-adjust: none;
 }
 textarea-container > textarea {
-	z-index: 1;
+	height: 100%;
 	resize: none;
+}
+textarea-container > .textarea {
+	position: absolute;
+	top: 0;
+	z-index: 1;
+	
 	background: transparent;
 	color: transparent;
 	caret-color: white;
+	contain: strict;
 }
-textarea-container > textarea-overlay {
+textarea-overlay {
 	pointer-events: none;
 	background: black;
 	color: white;
 	will-change: contents;
+	contain: paint;
 }
 /* necessary to avoid hiding last linebreak */
 textarea-overlay::after {
 	content: "\A";
-}
-textarea-overlay > * {
-	background: black;
 }
 .name { color: cyan; }
 .comment { color: #0C0; }
