@@ -97,17 +97,16 @@
 	}
 	
 	input.addEventListener('input', e=>{
-		let tk = kdt
 		if (lock) {
 			missed = true
 			return
 		}
 		lock = true
-		a(tk)
+		a(kdt)
 		setTimeout(()=>{
 			lock = false
 			if (missed)
-				a(tk)
+				a(kdt)
 		})
 	}, {passive: true})
 	

@@ -17,6 +17,7 @@ textarea-container {
 	display: block;
 	position: relative;
 	background: black;
+	contain: content;
 }
 textarea-container > * {
 	all: initial;
@@ -61,7 +62,7 @@ textarea-overlay {
 	background: black;
 	color: white;
 	will-change: contents;
-	contain: paint;
+	contain: content;
 }
 /* necessary to avoid hiding last linebreak */
 textarea-overlay::after {
