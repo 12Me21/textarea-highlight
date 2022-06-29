@@ -49,6 +49,7 @@ textarea-container > .textarea {
 	position: absolute;
 	top: 0;
 	z-index: 1;
+	overflow: hidden;
 	
 	background: transparent;
 	color: transparent;

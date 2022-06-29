@@ -85,19 +85,30 @@
 	}, {passive:true})
 	
 	let lock = false
+	let missed = true
+	function a(tk) {
+		missed = false
+		let t0 = performance.now()
+		let tp = update()
+		let t1 = performance.now()
+		void output.scrollHeight
+		let t2 = performance.now()
+		graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2], ['gray', tk])
+	}
+	
 	input.addEventListener('input', e=>{
 		let tk = kdt
-		if (lock) return
+		if (lock) {
+			missed = true
+			return
+		}
 		lock = true
-		//requestAnimationFrame(()=>{
+		a(tk)
+		setTimeout(()=>{
 			lock = false
-			let t0 = performance.now()
-			let tp = update()
-			let t1 = performance.now()
-			void output.scrollHeight
-			let t2 = performance.now()
-			graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2], ['gray', tk])
-		//})
+			if (missed)
+				a(tk)
+		})
 	}, {passive: true})
 	
 	fetch(location).then(x=>x.text()).then(x=>{
