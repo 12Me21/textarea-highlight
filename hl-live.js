@@ -1,28 +1,5 @@
 "use strict"
 
-// wait, we can sorta optimize the prefix thing by uh
-// if tokens store their actual text, then
-// just compare each token with the eqv substring of newtext and see if it matches
-// instead of storing oldtext
-function dirty_region(str1, str2, tokens) {
-	let ti=0, ind=0
-	for (let i=0; i<str1.length+9; i++) {
-		if (str1[i] !== str2[i])
-			break
-		// -9 - account for regex lookahead..
-		if (i-9 >= ind+tokens[ti].len)
-			ind += tokens[ti++].len
-	}
-	// now the end
-	let shift = str2.length - str1.length
-	let suff_start
-	for (suff_start=str2.length; suff_start>=ind; suff_start--) {
-		if (str2[suff_start] !== str1[suff_start-shift])
-			break
-	}
-	return [ti, ind, shift, suff_start+1]
-}
-
 class Highlighter {
 	constructor(states, elem) {
 		this.states = states
@@ -30,51 +7,78 @@ class Highlighter {
 		this.old_text = ""
 		this.tokens = []
 	}
-	parse(text) {
-		let oldtext = this.old_text
-		let oldtokens = this.tokens
-		let iloop = 0
-		let current, s_name
-		let [t1, ind, shift, suff_start] = dirty_region(oldtext, text, oldtokens)
-		let t2 = oldtokens.length // this only gets set for return
-		
-		let tokens = oldtokens.slice(0, t1)
-		let lastIndex = ind
-		
-		let to_state = (name)=>{
-			s_name = name
-			current = this.states[name]
-			current.regex.lastIndex = lastIndex
+	// wait, we can sorta optimize the prefix thing by uh
+	// if tokens store their actual text, then
+	// just compare each token with the eqv substring of newtext and see if it matches
+	// instead of storing oldtext
+	dirty_region(str2) {
+		let str1 = this.old_text
+		let tokens = this.tokens
+		let ti=0, ind=0
+		for (let i=0; i<str1.length+9; i++) {
+			if (str1[i] !== str2[i])
+				break
+			// -9 - account for regex lookahead..
+			if (i-9 >= ind+tokens[ti].len)
+				ind += tokens[ti++].len
 		}
-		to_state(t1>0 ? tokens[t1-1].state : 'data')
+		// now the end
+		let shift = str2.length - str1.length
+		let suff_start
+		for (suff_start=str2.length; suff_start>=ind; suff_start--) {
+			if (str2[suff_start] !== str1[suff_start-shift])
+				break
+		}
+		return [ti, ind, ind+shift, suff_start+1]
+	}
+	parse(text) {
+		let [t1, prefix, shift, suff_start] = this.dirty_region(text)
+		let oldtokens = this.tokens
+		let tokens = []
+		let lastIndex = prefix
 		
-		function output(start, end, type) {
-			if (start==end)
+		let t2 = oldtokens.length // this only gets set for return
+		// modifies: t2, tokens
+		// uses: oldtokens, suff_start, dirty_start, shift, t1
+		let output = (start, end, type, state)=>{
+			let len = end-start
+			if (!len)
 				return
-			if (start >= suff_start) {
-				let ind2=ind+shift
-				for (let i=t1; i<oldtokens.length; i++) {
+			// if we're in the region of text after the dirty part,
+			// look for the first token that 
+			if (start > suff_start) {
+				let ind2 = shift
+				for (let i=t1; i<oldtokens.length && ind2<=start; i++) {
 					let x = oldtokens[i]
-					if (ind2==start && ind2+x.len==end && x.type==type && x.state==s_name) {
+					if (ind2==start && x.len==len && x.type==type && x.state==state) {
 						t2 = i
 						return true
 					}
 					ind2 += x.len
 				}
+				console.log('huh??')
 			}
-			tokens.push({len:end-start, type, state:s_name})
+			tokens.push({len, type, state})
 		}
 		
-		let finish = ()=>{
-			this.old_text = text
-			this.tokens = tokens.concat(oldtokens.slice(t2))
-			return [t1, t2, tokens.length, ind]
+		let current, s_name
+		let to_state = (name)=>{
+			s_name = name
+			current = this.states[name]
+			current.regex.lastIndex = lastIndex
 		}
+		to_state(t1>0 ? oldtokens[t1-1].state : 'data')
 		
-		let match
-		while (match = current.regex.exec(text)) {
-			if (output(lastIndex, match.index))
-				return finish()
+		let iloop = 0
+		while (1) {
+			let match = current.regex.exec(text)
+			// insert the text between matches
+			let end = match ? match.index : text.length
+			if (output(lastIndex, end, null, s_name))
+				break
+			
+			if (!match)
+				break
 			// infinite loop protection
 			if (lastIndex == current.regex.lastIndex) {
 				if (iloop++ > 5)
@@ -84,22 +88,20 @@ class Highlighter {
 			// process match
 			lastIndex = current.regex.lastIndex
 			let g = current.groups[match.indexOf("", 1)-1]
-			if ('function'==typeof g)
-				g = g(match[0])
-			if (g.state)
-				s_name = g.state
-			if (output(match.index, lastIndex, g.token))
-				return finish()
 			if (g.state)
 				to_state(g.state)
+			if (output(match.index, lastIndex, g.token, s_name))
+				break
 		}
-		output(lastIndex, text.length)
-		return finish()
+		this.old_text = text
+		oldtokens.splice(t1, t2-t1, ...tokens)
+		// now, we just have to do the same .splice operation, but on the html
+		return [t1, t2, tokens, prefix]
 	}
 	update(t) {
 		// [start_token,end_token) is the region of output being replaced
 		// nlen is the new last token index (i.e. if this region changes size)
-		let [start_token, end_token, nlen, text_index] = this.parse(t)
+		let [start_token, end_token, new_tokens, text_index] = this.parse(t)
 		let tokens = this.tokens
 		let out = this.elem
 		let pp = performance.now()
@@ -111,10 +113,11 @@ class Highlighter {
 		//let range = document.createRange()
 		//range.setStart(out, nlen)
 		//range.setEndBefore(out, t2)
-		for (let i=start_token; i<nlen; i++) {
+		for (let token of new_tokens) {
 			let changed
-			let text = t.substr(text_index, tokens[i].len).replace(/[\0-\10\13\14\16-\37\177]/g, "￿") // 
-			let type = tokens[i].type||""
+			let text = t.substr(text_index, token.len).replace(/[\0-\10\13\14\16-\37\177]/g, "￿") // 
+			text_index += token.len
+			let type = token.type || ""
 			// reached end of delete region, start adding new elems
 			if (elem1==end_elem) {
 				elem1 = document.createElement('span')
@@ -125,7 +128,6 @@ class Highlighter {
 				elem1.textContent = text
 				changed = true
 			}
-			
 			if (elem1.className != type) {
 				elem1.className = type
 				changed = true
@@ -133,12 +135,11 @@ class Highlighter {
 			if (changed)
 				nchanged++
 			elem1 = elem1.nextSibling
-			text_index += tokens[i].len
 		}
 		while (elem1!=end_elem) {
-			let prev = elem1
-			elem1 = elem1.nextSibling
-			prev.remove()
+			let next = elem1.nextSibling
+			elem1.remove()
+			elem1 = next
 			nchanged++
 		}
 		$status.textContent = nchanged
@@ -164,7 +165,6 @@ let html_syntax = {
 <!---?>${{token:'comment'}}
 <!--${{token:'comment', state:'comment'}}
 <[!?/][^>]*>?${{token:'comment'}}
-\n${{}}
 `,
 	comment: STATE`
 (--!?>|$)${{token:'comment', state:'data'}}

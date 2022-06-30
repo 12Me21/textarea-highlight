@@ -82,8 +82,6 @@
 		return highlighter.update(input.value)
 	}
 	
-	// 
-	
 	let kdt
 	setup_textarea(input, ()=>{kdt=performance.now()})
 	
@@ -122,23 +120,6 @@
 	})
 	
 	update()
-	
-	function stick(elem) {
-		elem.style.height = elem.clientHeight+"px"
-		let pos = []
-		for (let c of elem.childNodes) {
-			pos.push([c.offsetLeft, c.offsetTop, c.offsetHeight])
-		}
-		for (let c of elem.childNodes) {
-			let [left, top, height] = pos.shift()
-			c.style.position = 'absolute'
-			if (height > 30)
-				c.style.textIndent = left+"px"
-			else
-				c.style.left = left+"px"
-			c.style.top = top+"px"
-		}
-	}
 </script>
 
 <!--<button onclick=stick($o)>stck</button>
