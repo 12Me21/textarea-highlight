@@ -52,7 +52,7 @@ textarea-container > div > textarea {
 	caret-color: white;
 	contain: strict;
 }
-textarea-container > div > textarea-overlay {
+textarea-container > div > pre {
 	pointer-events: none;
 	background: black;
 	color: white;
@@ -60,37 +60,27 @@ textarea-container > div > textarea-overlay {
 	contain: content;
 }
 /* necessary to avoid hiding last linebreak */
-textarea-container > div > textarea-overlay::after {
+textarea-container > div > pre::after {
 	content: "\A";
 }
 
-.name { color: cyan; }
-.comment { color: #0C0; }
-.commenttext { color: lime; }
-.tag { color: #0AF; }
-.doctype { color: silver; }
-.charref { color: magenta; }
-.key { color: orange; }
-.value { color: fuchsia; }
-.script { color: silver; }
-.rawtext { color: silver; }
-
-.prefix {color: lime;}
-.new {text-decoration: underline;}
-.suffix {color: blue;}
-
-span.word {
-	color: #DEF;
-}
-span.comment {
-	color: #a1f198;
-	font-style: italic;
-}
-span.string { color: #9C9; }
-span.operator { color: #BB7; }
-span.keyword { color: #2494f0; }
-span.constant { color: #f359ab; }
-span.property { color: #D9B; }
-span.flow { color: #2494f0; }
-span.semicolon { color: #CF0; }
-span.assignment { color: goldenrod; }
+textarea-container span.name { color: cyan; }
+textarea-container span.comment { color: #0C0; }
+textarea-container span.commenttext { color: lime; }
+textarea-container span.tag { color: #0AF; }
+textarea-container span.doctype { color: silver; }
+textarea-container span.charref { color: magenta; }
+textarea-container span.key { color: orange; }
+textarea-container span.value { color: fuchsia; }
+textarea-container span.script { color: silver; }
+textarea-container span.rawtext { color: silver; }
+textarea-container span.word {color: #DEF;}
+textarea-container span.comment {color: #a1f198;}
+textarea-container span.string { color: #9C9; }
+textarea-container span.operator { color: #BB7; }
+textarea-container span.keyword { color: #2494f0; }
+textarea-container span.constant { color: #f359ab; }
+textarea-container span.property { color: #D9B; }
+textarea-container span.flow { color: #2494f0; }
+textarea-container span.semicolon { color: #CF0; }
+textarea-container span.assignment { color: goldenrod; }

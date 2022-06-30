@@ -6,11 +6,12 @@
 <link rel=stylesheet href=common.css>
 
 <script src=hl-live.js></script>
+<script src=textarea-indent.js></script>
 
 <body class='Col'>
 <textarea-container class='limit' tabindex=-1>
-	<div id=$c tabindex=-1>
-		<textarea-overlay id=$o></textarea-overlay>
+	<div tabindex=-1>
+		<pre id=$o></pre>
 		<textarea id=$i spellcheck=false><span>test</span></textarea>
 	</div>
 </textarea-container>
@@ -34,12 +35,13 @@
 	<canvas height=200 width=500 id=$canvas style='width:max-content'></canvas>
 </div>
 
-<script>
+<script>"use strict"
 	let input = $i
 	let output = $o
 	let canvas = $canvas
 	
-	"use strict"
+	let highlighter = new Highlighter(html_syntax, output)
+	
 	let c2d = canvas.getContext('2d')
 	let cx
 	let center = 100
@@ -77,47 +79,13 @@
 	}
 	
 	function update() {
-		return render(input.value, output)
+		return highlighter.update(input.value)
 	}
 	
-	function get_last_indent(str, end) {
-		let start
-		for (start=end-1; start>=0 && str[start]!="\n"; start--)
-			if (str[start]!=" " && str[start]!="\t")
-				end = start
-		return str.substring(start+1, end)
-	}
-	function capture_tab(input, state) {
-		input.dataset.capture_tab = state ? "yes" : ""
-	}
-	function init(input, cb) {
-		Object.assign(input, {
-			onclick(e) { capture_tab(e.target, true) },
-			onfocus(e) { capture_tab(e.target, false) },
-			onblur(e) { capture_tab(e.target, false) },
-			onkeydown(e) {
-				if ('Tab'==e.key && !e.shiftKey && e.target.dataset.capture_tab) {
-					cb && cb()
-					e.preventDefault()
-					document.execCommand('insertText', false, "\t")
-				}
-			},
-			onbeforeinput(e) {
-				cb && cb()
-				capture_tab(e.target, true)
-				if ('insertLineBreak'==e.inputType) {
-					let indent = get_last_indent(e.target.value, e.target.selectionStart)
-					if (indent) {
-						e.preventDefault()
-						document.execCommand('insertText', false, "\n"+indent)
-					}
-				}
-			}
-		})
-	}
+	// 
 	
 	let kdt
-	init(input, ()=>{kdt=performance.now()})
+	setup_textarea(input, ()=>{kdt=performance.now()})
 	
 	let lock = false
 	let missed = true

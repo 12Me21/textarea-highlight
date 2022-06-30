@@ -16,14 +16,16 @@ function first_difference(str1, str2, tokens) {
 	return [ti-1, ind]
 }
 
-let nw = 0
-
-class Parser {
-	constructor(states) {
+class Highlighter {
+	constructor(states, elem) {
 		this.states = states
+		this.elem = elem
+		this.old_text = ""
+		this.tokens = []
 	}
-	parse(text, oldtext, oldtokens) {
-		nw++
+	parse(text) {
+		let oldtext = this.old_text
+		let oldtokens = this.tokens
 		let iloop = 0
 		let current, s_name
 		let [t1, ind] = first_difference(oldtext, text, oldtokens)
@@ -36,15 +38,9 @@ class Parser {
 		suff_start++
 		let t2 = null
 		
-		let token1
-		let tokens
-		if (t1<0) {
-			token1 = {len:0, type:undefined, state:'data'}
-			tokens = []
-		} else {
-			token1 = oldtokens[t1]
-			tokens = oldtokens.slice(0, t1+1)
-		}
+		let tokens = oldtokens.slice(0, t1+1)
+		let token1 = t1<0 ? {len:0, type:undefined, state:'data'} : oldtokens[t1]
+		
 		let lastIndex = ind
 		
 		let to_state = (name)=>{
@@ -68,20 +64,19 @@ class Parser {
 					ind2 += x.len
 				}
 			}
-			tokens.push({len:end-start, type, state:s_name, new:nw})
+			tokens.push({len:end-start, type, state:s_name})
 		}
 		
-		function merge() {
-			if (t2==null)
-				return [tokens, t1, t2, tokens.length, ind]
-			return [tokens.concat(oldtokens.slice(t2)), t1, t2, tokens.length, ind]
+		let finish = ()=>{
+			this.old_text = text
+			this.tokens = t2==null ? tokens : tokens.concat(oldtokens.slice(t2))
+			return [t1, t2, tokens.length, ind]
 		}
-		//console.log("starting on char: "+lastIndex, "suffix: ", suffix)
 		
 		let match
 		while (match = current.regex.exec(text)) {
 			if (output(lastIndex, match.index))
-				return merge()
+				return finish()
 			// infinite loop protection
 			if (lastIndex == current.regex.lastIndex) {
 				if (iloop++ > 5)
@@ -96,12 +91,59 @@ class Parser {
 			if (g.state)
 				s_name = g.state
 			if (output(match.index, lastIndex, g.token))
-				return merge()
+				return finish()
 			if (g.state)
 				to_state(g.state)
 		}
 		output(lastIndex, text.length)
-		return merge()
+		return finish()
+	}
+	update(t) {
+		// [start_token,end_token) is the region of output being replaced
+		// nlen is the new last token index (i.e. if this region changes size)
+		let [start_token, end_token, nlen, text_index] = this.parse(t)
+		let tokens = this.tokens
+		let out = this.elem
+		let pp = performance.now()
+		let elem1 = out.childNodes.item(start_token+1)
+		let end_elem = out.childNodes.item(end_token)
+		let nchanged = 0
+		// todo: delete nodes with this?
+		//let range = document.createRange()
+		//range.setStart(out, nlen)
+		//range.setEndBefore(out, t2)
+		for (let i=start_token+1; i<nlen; i++) {
+			let changed
+			let text = t.substr(text_index, tokens[i].len).replace(/[\0-\10\13\14\16-\37\177]/g, "￿") // 
+			let type = tokens[i].type||""
+			// reached end of delete region, start adding new elems
+			if (elem1==end_elem) {
+				elem1 = document.createElement('span')
+				out.insertBefore(elem1, end_elem)
+				changed = true
+			}
+			if (elem1.textContent != text) {
+				elem1.textContent = text
+				changed = true
+			}
+			
+			if (elem1.className != type) {
+				elem1.className = type
+				changed = true
+			}
+			if (changed)
+				nchanged++
+			elem1 = elem1.nextSibling
+			text_index += tokens[i].len
+		}
+		while (elem1!=end_elem) {
+			let prev = elem1
+			elem1 = elem1.nextSibling
+			prev.remove()
+			nchanged++
+		}
+		$status.textContent = nchanged
+		return pp
 	}
 }
 
@@ -116,7 +158,7 @@ function STATE({raw}, ...values) {
 // todo: function to determine new state
 // "default" highlight for skipped chars (i.e. within rawtext states)
 
-let parse_html = new Parser({
+let html_syntax = {
 	data: STATE`
 &([a-zA-Z0-9]+|#[xX][0-9a-fA-F]+|#[0-9]+);?${{token:'charref'}}
 <(?=/?[a-zA-Z])${{token:'tag', state:'tag'}}
@@ -233,52 +275,4 @@ ${{state:'js'}}
 	js_after_label: STATE`
 \s*:${{state:'js'}}
 `
-})
-
-let parser = parse_html
-let old_tokens=[], old_text=""
-function render(t, out) {
-	let [tokens, t1, t2, nlen, ind] = parser.parse(t, old_text, old_tokens)
-	let pp = performance.now()
-	old_tokens = tokens
-	old_text = t
-	let elem1 = out.childNodes[t1+1]
-	let elem2 = t2==null ? null : out.childNodes[t2]
-	let prev
-	let nchanged = 0
-	// todo: delete nodes with this?
-	//let range = document.createRange()
-	//range.setStart(out, nlen)
-	//range.setEndBefore(out, t2)
-	for (let i=t1+1; i<nlen; i++) {
-		let changed
-		if (elem1==elem2) {
-			elem1 = document.createElement('span')
-			out.insertBefore(elem1, elem2)
-			changed = true
-		}
-		let text = t.substr(ind, tokens[i].len).replace(/[\0-\10\13\14\16-\37\177]/g, "￿") // 
-		if (elem1.textContent != text) {
-			elem1.textContent = text
-			changed = true
-		}
-		if (elem1.className != tokens[i].type) {
-			elem1.className = tokens[i].type||""
-			changed = true
-		}
-		if (changed)
-			nchanged++
-//		if (changed)
-		//	elem1.dataset.anim = elem1.dataset.anim=='false'
-		elem1 = elem1.nextSibling
-		ind += tokens[i].len
-	}
-	while (elem1!=elem2) {
-		let prev = elem1
-		elem1 = elem1.nextSibling
-		prev.remove()
-		nchanged++
-	}
-	$status.textContent = nchanged
-	return pp
 }
