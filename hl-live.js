@@ -1,12 +1,16 @@
 "use strict"
 
+// wait, we can sorta optimize the prefix thing by uh
+// if tokens store their actual text, then
+// just compare each token with the eqv substring of newtext and see if it matches
+// instead of storing oldtext
 function dirty_region(str1, str2, tokens) {
 	let ti=0, ind=0
-	let offset = 9 // account for regex lookahead..
-	for (let i=0; i<str1.length; i++) {
+	for (let i=0; i<str1.length+9; i++) {
 		if (str1[i] !== str2[i])
 			break
-		if (i-offset >= ind+tokens[ti].len)
+		// -9 - account for regex lookahead..
+		if (i-9 >= ind+tokens[ti].len)
 			ind += tokens[ti++].len
 	}
 	// now the end
@@ -32,7 +36,7 @@ class Highlighter {
 		let iloop = 0
 		let current, s_name
 		let [t1, ind, shift, suff_start] = dirty_region(oldtext, text, oldtokens)
-		let t2 = null
+		let t2 = oldtokens.length // this only gets set for return
 		
 		let tokens = oldtokens.slice(0, t1)
 		let lastIndex = ind
@@ -63,7 +67,7 @@ class Highlighter {
 		
 		let finish = ()=>{
 			this.old_text = text
-			this.tokens = t2==null ? tokens : tokens.concat(oldtokens.slice(t2))
+			this.tokens = tokens.concat(oldtokens.slice(t2))
 			return [t1, t2, tokens.length, ind]
 		}
 		
@@ -101,6 +105,7 @@ class Highlighter {
 		let pp = performance.now()
 		let elem1 = out.childNodes.item(start_token)
 		let end_elem = out.childNodes.item(end_token)
+		
 		let nchanged = 0
 		// todo: delete nodes with this?
 		//let range = document.createRange()

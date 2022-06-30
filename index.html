@@ -123,4 +123,26 @@
 	
 	update()
 	
+	function stick(elem) {
+		elem.style.height = elem.clientHeight+"px"
+		let pos = []
+		for (let c of elem.childNodes) {
+			pos.push([c.offsetLeft, c.offsetTop, c.offsetHeight])
+		}
+		for (let c of elem.childNodes) {
+			let [left, top, height] = pos.shift()
+			c.style.position = 'absolute'
+			if (height > 30)
+				c.style.textIndent = left+"px"
+			else
+				c.style.left = left+"px"
+			c.style.top = top+"px"
+		}
+	}
 </script>
+
+<!--<button onclick=stick($o)>stck</button>
+	  idea:
+	  wrap each line of text in a <div>
+	  maybe then it wont be so slow to shift things downwards?
+-->
