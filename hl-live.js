@@ -141,7 +141,7 @@ class Highlighter {
 			elem1 = next
 			nchanged++
 		}
-		$status.textContent = nchanged
+//		$status.textContent = nchanged
 		return pp
 	}
 }
@@ -164,6 +164,7 @@ let html_syntax = {
 <!---?>${{token:'comment'}}
 <!--${{token:'comment', state:'comment'}}
 <[!?/][^>]*>?${{token:'comment'}}
+\n${{}}
 `,
 	comment: STATE`
 (--!?>|$)${{token:'comment', state:'data'}}

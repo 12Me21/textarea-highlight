@@ -45,14 +45,15 @@
 	let c2d = canvas.getContext('2d')
 	let cx
 	let center = 100
+	let scale = .5
 	function reset_graph() {
 		c2d.clearRect(10,0,500,200)
 		c2d.fillStyle = 'black'
 		c2d.fillRect(0,0,1,200)
 		c2d.fillRect(0,100,9,1)
-		for (let i=0; i<=50; i+=10) {
-			c2d.fillRect(0,center - i*2 - 0.5,500,1)
-			c2d.fillRect(0,center+1 + i*2 - 0.5,500,1)
+		for (let i=0; i<=200/2/scale; i+=1000/60) {
+			c2d.fillRect(0,center - i*scale - 0.5,500,1)
+			c2d.fillRect(0,center+1 + i*scale - 0.5,500,1)
 		}
 		cx=10
 	}
@@ -67,13 +68,13 @@
 		for (let i=after.length-1; i>=1; i-=2) {
 			let t = after[i]
 			c2d.fillStyle = after[i-1]
-			c2d.fillRect(cx,center,1,-(t-t0)*2)
+			c2d.fillRect(cx,center,1,-(t-t0)*scale)
 		}
 		for (let i=before.length-1; i>=1; i-=2) {
 			let t = before[i]
 			if (t) {
 				c2d.fillStyle = before[i-1]
-				c2d.fillRect(cx,center+1,1,-(t-t0)*2)
+				c2d.fillRect(cx,center+1,1,-(t-t0)*scale)
 			}
 		}
 	}
@@ -87,14 +88,21 @@
 	
 	let lock = false
 	let missed = true
+	let p0
 	function a(tk) {
 		missed = false
 		let t0 = performance.now()
+//		$status.textContent = p0-t0
+		p0 = t0
 		let tp = update()
 		let t1 = performance.now()
-		void output.scrollHeight
-		let t2 = performance.now()
-		graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2], ['gray', tk])
+		void output.offsetHeight
+		requestAnimationFrame(e=>{
+			requestAnimationFrame(e=>{
+			let t2 = performance.now()
+				graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2], ['gray', tk])
+			})
+		})
 	}
 	
 	input.addEventListener('input', e=>{

@@ -58,11 +58,14 @@ textarea-container > div > pre {
 	color: white;
 	will-change: contents;
 	contain: content;
-	position: relative;
 }
 /* necessary to avoid hiding last linebreak */
 textarea-container > div > pre::after {
 	content: "\A";
+}
+textarea-container span {
+	overflow: hidden; overflow: clip;
+	contain: content;
 }
 
 textarea-container span.name { color: cyan; }
