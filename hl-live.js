@@ -35,8 +35,6 @@ class Highlighter {
 		let [t1, prefix, shift, suff_start] = this.dirty_region(text)
 		let oldtokens = this.tokens
 		let tokens = []
-		let lastIndex = prefix
-		
 		let t2 = oldtokens.length // this only gets set for return
 		// modifies: t2, tokens
 		// uses: oldtokens, suff_start, dirty_start, shift, t1
@@ -46,7 +44,7 @@ class Highlighter {
 				return
 			// if we're in the region of text after the dirty part,
 			// look for the first token that 
-			if (start > suff_start) {
+			if (start >= suff_start) {
 				let ind2 = shift
 				for (let i=t1; i<oldtokens.length && ind2<=start; i++) {
 					let x = oldtokens[i]
@@ -56,11 +54,12 @@ class Highlighter {
 					}
 					ind2 += x.len
 				}
-				console.log('huh??')
+				// if we reach here, that means there was a matching suffix on the text, but we couldn't sync states before the end. xd
 			}
 			tokens.push({len, type, state})
 		}
 		
+		let lastIndex = prefix
 		let current, s_name
 		let to_state = (name)=>{
 			s_name = name
