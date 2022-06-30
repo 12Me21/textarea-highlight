@@ -91,10 +91,12 @@
 		let tp = update()
 		let t1 = performance.now()
 		void output.offsetHeight
+		let tn = performance.now()
 		requestAnimationFrame(e=>{
+			let tb = performance.now()
 			requestAnimationFrame(e=>{
-			let t2 = performance.now()
-				graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2])
+				let t2 = performance.now()
+				graph_time(t0, ['lime', tp, '#F60', t1, 'silver', tn, 'gray', tb, 'purple', t2])
 			})
 		})
 	}
