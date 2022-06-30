@@ -1,19 +1,22 @@
 "use strict"
 
-function first_difference(str1, str2, tokens) {
-	let i
-	let ti = 0
-	let ind = 0
+function dirty_region(str1, str2, tokens) {
+	let ti=0, ind=0
 	let offset = 9 // account for regex lookahead..
-	for (i=-offset; i<str1.length; i++) {
-		if (str1[i+offset] !== str2[i+offset])
+	for (let i=0; i<str1.length; i++) {
+		if (str1[i] !== str2[i])
 			break
-		if (i >= ind+tokens[ti].len) {
-			ind += tokens[ti].len
-			ti++
-		}
+		if (i-offset >= ind+tokens[ti].len)
+			ind += tokens[ti++].len
 	}
-	return [ti, ind]
+	// now the end
+	let shift = str2.length - str1.length
+	let suff_start
+	for (suff_start=str2.length; suff_start>=ind; suff_start--) {
+		if (str2[suff_start] !== str1[suff_start-shift])
+			break
+	}
+	return [ti, ind, shift, suff_start+1]
 }
 
 class Highlighter {
@@ -28,14 +31,7 @@ class Highlighter {
 		let oldtokens = this.tokens
 		let iloop = 0
 		let current, s_name
-		let [t1, ind] = first_difference(oldtext, text, oldtokens)
-		let shift = text.length - oldtext.length
-		let suff_start
-		for (suff_start=text.length; suff_start>=ind; suff_start--) {
-			if (text[suff_start] !== oldtext[suff_start-shift])
-				break
-		}
-		suff_start++
+		let [t1, ind, shift, suff_start] = dirty_region(oldtext, text, oldtokens)
 		let t2 = null
 		
 		let tokens = oldtokens.slice(0, t1)
