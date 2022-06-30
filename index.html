@@ -22,8 +22,6 @@
 			<tr>
 				<th> color <th> time
 			<tr>
-				<th style="background:gray"> gray <td> input delay
-			<tr>
 				<th style="background:lime"> lime <td> parsing
 			<tr>
 				<th style="background:#F60"> orange <td> rendering
@@ -44,38 +42,35 @@
 	
 	let c2d = canvas.getContext('2d')
 	let cx
-	let center = 100
-	let scale = .5
+	let center = 199
+	function scale(y) {
+		return y/100*100.5
+	}
 	function reset_graph() {
 		c2d.clearRect(10,0,500,200)
 		c2d.fillStyle = 'black'
 		c2d.fillRect(0,0,1,200)
-		c2d.fillRect(0,100,9,1)
-		for (let i=0; i<=200/2/scale; i+=1000/60) {
-			c2d.fillRect(0,center - i*scale - 0.5,500,1)
-			c2d.fillRect(0,center+1 + i*scale - 0.5,500,1)
+		let lim = 200
+		for (let i=0; scale(i)<=200; i+=10) {
+			if (lim-- < 0)
+				break
+			c2d.fillStyle = i%100==0 ? 'black' : 'gray'
+			c2d.fillRect(0,center - scale(i) - (i ? 0.5 : 0),500,1)
 		}
+		c2d.fillStyle = 'red'
+		c2d.fillRect(0,center - scale(1000/60) - 0.5,500,1)
 		cx=10
 	}
 	reset_graph()
 	//c2d.fillRect(0,center,9,1)
-	function graph_time(t0, after, before) {
+	function graph_time(t0, after) {
 		cx++
 		if (cx>=500)
 			reset_graph()
-		c2d.fillStyle = 'white'
-		c2d.fillRect(cx,center,1,1)
 		for (let i=after.length-1; i>=1; i-=2) {
 			let t = after[i]
 			c2d.fillStyle = after[i-1]
-			c2d.fillRect(cx,center,1,-(t-t0)*scale)
-		}
-		for (let i=before.length-1; i>=1; i-=2) {
-			let t = before[i]
-			if (t) {
-				c2d.fillStyle = before[i-1]
-				c2d.fillRect(cx,center+1,1,-(t-t0)*scale)
-			}
+			c2d.fillRect(cx,center,1,scale(-(t-t0)))
 		}
 	}
 	
@@ -83,13 +78,12 @@
 		return highlighter.update(input.value)
 	}
 	
-	let kdt
-	setup_textarea(input, ()=>{kdt=performance.now()})
+	setup_textarea(input)
 	
 	let lock = false
 	let missed = true
 	let p0
-	function a(tk) {
+	function a() {
 		missed = false
 		let t0 = performance.now()
 //		$status.textContent = p0-t0
@@ -100,7 +94,7 @@
 		requestAnimationFrame(e=>{
 			requestAnimationFrame(e=>{
 			let t2 = performance.now()
-				graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2], ['gray', tk])
+				graph_time(t0, ['lime', tp, '#F60', t1, 'purple', t2])
 			})
 		})
 	}
@@ -111,13 +105,11 @@
 			return
 		}
 		lock = true
-		a(kdt)
-		kdt = null
+		a()
 		setTimeout(()=>{
 			lock = false
 			if (missed) {
-				a(kdt)
-				kdt = null
+				a()
 			}
 		})
 	}, {passive: true})
