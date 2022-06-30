@@ -13,7 +13,7 @@ function first_difference(str1, str2, tokens) {
 			ti++
 		}
 	}
-	return [ti-1, ind]
+	return [ti, ind]
 }
 
 class Highlighter {
@@ -38,9 +38,7 @@ class Highlighter {
 		suff_start++
 		let t2 = null
 		
-		let tokens = oldtokens.slice(0, t1+1)
-		let token1 = t1<0 ? {len:0, type:undefined, state:'data'} : oldtokens[t1]
-		
+		let tokens = oldtokens.slice(0, t1)
 		let lastIndex = ind
 		
 		let to_state = (name)=>{
@@ -48,14 +46,14 @@ class Highlighter {
 			current = this.states[name]
 			current.regex.lastIndex = lastIndex
 		}
-		to_state(token1.state)
+		to_state(t1>0 ? tokens[t1-1].state : 'data')
 		
 		function output(start, end, type) {
 			if (start==end)
 				return
 			if (start >= suff_start) {
 				let ind2=ind+shift
-				for (let i=t1+1; i<oldtokens.length; i++) {
+				for (let i=t1; i<oldtokens.length; i++) {
 					let x = oldtokens[i]
 					if (ind2==start && ind2+x.len==end && x.type==type && x.state==s_name) {
 						t2 = i
@@ -105,14 +103,14 @@ class Highlighter {
 		let tokens = this.tokens
 		let out = this.elem
 		let pp = performance.now()
-		let elem1 = out.childNodes.item(start_token+1)
+		let elem1 = out.childNodes.item(start_token)
 		let end_elem = out.childNodes.item(end_token)
 		let nchanged = 0
 		// todo: delete nodes with this?
 		//let range = document.createRange()
 		//range.setStart(out, nlen)
 		//range.setEndBefore(out, t2)
-		for (let i=start_token+1; i<nlen; i++) {
+		for (let i=start_token; i<nlen; i++) {
 			let changed
 			let text = t.substr(text_index, tokens[i].len).replace(/[\0-\10\13\14\16-\37\177]/g, "￿") // 
 			let type = tokens[i].type||""
