@@ -44,7 +44,7 @@
 	let cx
 	let center = 199
 	function scale(y) {
-		return y/100*100.5
+		return y*2
 	}
 	function reset_graph() {
 		c2d.clearRect(10,0,500,200)
@@ -54,7 +54,7 @@
 		for (let i=0; scale(i)<=200; i+=10) {
 			if (lim-- < 0)
 				break
-			c2d.fillStyle = i%100==0 ? 'black' : 'gray'
+			c2d.fillStyle = 'gray'
 			c2d.fillRect(0,center - scale(i) - (i ? 0.5 : 0),500,1)
 		}
 		c2d.fillStyle = 'red'
@@ -70,7 +70,12 @@
 		for (let i=after.length-1; i>=1; i-=2) {
 			let t = after[i]
 			c2d.fillStyle = after[i-1]
-			c2d.fillRect(cx,center,1,scale(-(t-t0)))
+			let y = scale(t-t0)
+			c2d.fillRect(cx,center,1,-y)
+			if (center-y < 0) {
+				c2d.fillStyle = "#F40"
+				c2d.fillRect(cx,0,1,-(center-y))
+			}
 		}
 	}
 	
@@ -80,11 +85,8 @@
 	
 	setup_textarea(input)
 	
-	let lock = false
-	let missed = true
 	let p0
 	function a() {
-		missed = false
 		let t0 = performance.now()
 //		$status.textContent = p0-t0
 		p0 = t0
@@ -96,11 +98,12 @@
 			let tb = performance.now()
 			requestAnimationFrame(e=>{
 				let t2 = performance.now()
-				graph_time(t0, ['lime', tp, '#F60', t1, 'silver', tn, 'gray', tb, 'purple', t2])
+				graph_time(t0, ['lime', tp, '#F60', t1, '#606', tn, '#707', tb, '#808', t2])
 			})
 		})
 	}
 	
+	let lock = false, missed = false
 	input.addEventListener('input', e=>{
 		if (lock) {
 			missed = true
@@ -108,10 +111,12 @@
 		}
 		lock = true
 		a()
+		missed = false
 		setTimeout(()=>{
 			lock = false
 			if (missed) {
 				a()
+				missed = false
 			}
 		})
 	}, {passive: true})
