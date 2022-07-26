@@ -37,7 +37,7 @@ let events = {
 				document.execCommand('insertText', false, "\n"+indent)
 			}
 		} else if ('insertText'==ev.inputType) {
-			if (/^[}\])]$/.test(ev.data) {
+			if (/^[}\])]$/.test(ev.data)) {
 				let [start, end] = get_last_indent(el.value, el.selectionStart)
 				if (end==el.selectionStart)
 					el.selectionStart -= indent_level.length
