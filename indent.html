@@ -1,0 +1,22 @@
+<!doctype html><meta charset=utf-8>
+<meta name=viewport content="width=device-width, height=device-height, initial-scale=1">
+<title>textarea indent demo</title>
+
+<style>
+	textarea { -moz-tab-size: 3; tab-size: 3; }
+</style>
+
+<script src=ti2.js></script>
+
+<label>Indent level (0=tab): <input type=number value=0 min=0 max=8 id=$indent></label>
+<br>
+<textarea id=$textarea></textarea>
+
+<script>
+	$indent.onchange=ev=>{
+		let v = +$indent.value
+		indent_level = v ? " ".repeat(v) : "\t"
+	}
+	$indent.onchange()
+	setup_textarea($textarea)
+</script>
